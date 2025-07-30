@@ -61,37 +61,48 @@ const History = () => {
         const end = new Date();
         const start = new Date();
         
-        // Set time to end of day for end date and start of day for start date
-        end.setHours(23, 59, 59, 999);
-        start.setHours(0, 0, 0, 0);
+        // Get the current timezone offset for proper local time handling
+        const now = new Date();
         
         switch (range) {
             case '12h':
-                // For 12 hours, use current time instead of start of day
-                const now = new Date();
-                start.setTime(now.getTime() - (12 * 60 * 60 * 1000)); // 12 hours ago
+                // For 12 hours, go back exactly 12 hours from now
+                start.setTime(now.getTime() - (12 * 60 * 60 * 1000));
                 end.setTime(now.getTime());
                 break;
             case '1d':
-                start.setDate(start.getDate() - 1);
+                // For 1 day, go back 24 hours from now
+                start.setTime(now.getTime() - (24 * 60 * 60 * 1000));
+                end.setTime(now.getTime());
                 break;
             case '3d':
-                start.setDate(start.getDate() - 3);
+                start.setTime(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+                end.setTime(now.getTime());
                 break;
             case '7d':
-                start.setDate(start.getDate() - 7);
+                start.setTime(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+                end.setTime(now.getTime());
                 break;
             case '30d':
-                start.setDate(start.getDate() - 30);
+                start.setTime(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                end.setTime(now.getTime());
                 break;
             default:
-                start.setDate(start.getDate() - 1);
+                start.setTime(now.getTime() - (24 * 60 * 60 * 1000));
+                end.setTime(now.getTime());
         }
         
+        // Format dates properly for the backend
         const startDateStr = start.toISOString().split('T')[0];
         const endDateStr = end.toISOString().split('T')[0];
         
-        console.log('Setting date range:', { range, startDateStr, endDateStr });
+        console.log('Setting date range:', { 
+            range, 
+            startDateStr, 
+            endDateStr,
+            startTime: start.toLocaleString(),
+            endTime: end.toLocaleString()
+        });
         
         setStartDate(startDateStr);
         setEndDate(endDateStr);
@@ -156,7 +167,14 @@ const History = () => {
         const csvContent = [
             headers.join(','),
             ...historicalData.map(row => [
-                new Date(row.timestamp * 1000).toLocaleString(),
+                new Date(row.timestamp * 1000).toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
                 row.pH,
                 row.TDS,
                 row.Temperature,
@@ -189,7 +207,10 @@ const History = () => {
             datasets: [
                 {
                     label: field,
-                    data: data.map(item => item[field]),
+                    data: data.map(item => ({
+                        x: new Date(item.timestamp * 1000), // Use Date object for proper timezone handling
+                        y: parseFloat(item[field]) || 0
+                    })),
                     borderColor: color,
                     backgroundColor: color + '20',
                     fill: true,
@@ -238,7 +259,14 @@ const History = () => {
                         return `${yAxisLabel}: ${context.parsed.y}`;
                     },
                     title: function(context) {
-                        return new Date(context[0].parsed.x).toLocaleString();
+                        return new Date(context[0].parsed.x).toLocaleString('id-ID', {
+                            timeZone: 'Asia/Jakarta',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
                     }
                 }
             }
@@ -250,19 +278,21 @@ const History = () => {
                     displayFormats: {
                         minute: 'HH:mm',
                         hour: 'HH:mm',
-                        day: 'MM/dd HH:mm',
-                        week: 'MM/dd',
-                        month: 'MM/dd'
+                        day: 'DD/MM HH:mm',
+                        week: 'DD/MM',
+                        month: 'DD/MM'
                     },
-                    unit: historicalData.length <= 48 ? 'hour' : historicalData.length <= 144 ? 'day' : 'week', // 48 = 1 day data, 144 = 3 days
-                    stepSize: historicalData.length <= 48 ? 2 : 1 // Show every 2 hours for 1 day view
+                    unit: historicalData.length <= 48 ? 'hour' : historicalData.length <= 144 ? 'day' : 'week',
+                    stepSize: historicalData.length <= 48 ? 1 : 1,
+                    // Remove timezone as Chart.js handles it differently
                 },
                 grid: {
                     color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
                 },
                 ticks: {
                     color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280',
-                    maxTicksLimit: 8 // Limit number of ticks for cleaner display
+                    maxTicksLimit: 12,
+                    // Let Chart.js handle the formatting automatically
                 }
             },
             y: {

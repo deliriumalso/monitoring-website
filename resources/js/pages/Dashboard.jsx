@@ -238,7 +238,7 @@ const Dashboard = () => {
             {realtimeData && (
                 <>
                     {/* Sensor Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* pH Card */}
                         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
@@ -267,21 +267,7 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* Temperature Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <div className="flex items-center space-x-2">
-                                        <FireIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Temperature</p>
-                                    </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Temperature || 0}°C</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Water Temperature</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Current Card */}
+                        {/* 3-Pump Current Card */}
                         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
@@ -295,6 +281,23 @@ const Dashboard = () => {
                             </div>
                         </div>
 
+                        {/* Temperature Card - Moved to the right */}
+                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <FireIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Temperature</p>
+                                    </div>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Temperature || 0}°C</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Water Temperature</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Secondary Metrics Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                         {/* 24H Current Card */}
                         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
@@ -305,6 +308,36 @@ const Dashboard = () => {
                                     </div>
                                     <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Current_24Jam || 0}A</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Circulation Pump</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* System Status Card */}
+                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <Cog6ToothIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">System Status</p>
+                                    </div>
+                                    <p className="text-2xl lg:text-3xl font-bold text-green-600 dark:text-green-400 mt-2">Online</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">All Systems Active</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Last Update Card */}
+                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <ClockIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Update</p>
+                                    </div>
+                                    <p className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mt-2">
+                                        {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Real-time Data</p>
                                 </div>
                             </div>
                         </div>

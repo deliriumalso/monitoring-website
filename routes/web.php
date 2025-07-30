@@ -30,6 +30,7 @@ Route::prefix('api')->group(function () {
     // Monitoring API routes
     Route::get('/realtime-data', [MonitoringController::class, 'getRealtimeData'])->name('api.realtime');
     Route::get('/test-firebase', [MonitoringController::class, 'testFirebaseConnection'])->name('api.test.firebase');
+    Route::get('/generate-test-data', [MonitoringController::class, 'generateTestData'])->name('api.generate.test');
     Route::get('/historical-data', [MonitoringController::class, 'getHistoricalData'])->name('api.historical');
     Route::get('/historical-data/date-range', [MonitoringController::class, 'getHistoricalDataByDateRange'])->name('api.historical.daterange');
     Route::get('/statistics', [MonitoringController::class, 'getStatistics'])->name('api.statistics');

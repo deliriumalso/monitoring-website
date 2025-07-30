@@ -248,20 +248,104 @@ class MonitoringController extends Controller
     }
 
     /**
+     * Generate test data for a full day with 30-minute intervals
+     */
+    public function generateTestData(Request $request): JsonResponse
+    {
+        try {
+            $date = $request->input('date', date('Y-m-d')); // Default to today
+            
+            // Create start and end timestamps for the specified date
+            $startTime = new \DateTime($date . ' 00:00:00', new \DateTimeZone('Asia/Jakarta'));
+            $endTime = new \DateTime($date . ' 23:59:59', new \DateTimeZone('Asia/Jakarta'));
+            
+            $testData = [];
+            $current = clone $startTime;
+            
+            // Generate data every 30 minutes
+            while ($current <= $endTime) {
+                // Convert to UTC for Firestore storage
+                $utcTime = clone $current;
+                $utcTime->setTimezone(new \DateTimeZone('UTC'));
+                
+                $timestamp = $utcTime->getTimestamp();
+                
+                // Generate realistic sensor data with some variation
+                $hour = (int) $current->format('H');
+                $baseTemp = 25 + sin(($hour / 24) * 2 * pi()) * 3; // Temperature varies by hour
+                
+                $data = [
+                    'timestamp' => $timestamp,
+                    'pH' => round(6.0 + (rand(-50, 50) / 100), 2), // 5.5 - 6.5 range
+                    'TDS' => rand(800, 1200), // 800-1200 ppm
+                    'Temperature' => round($baseTemp + (rand(-10, 10) / 10), 1), // Temp with hour variation
+                    'Current_3Pompa' => round(1.0 + (rand(0, 50) / 100), 2), // 1.0-1.5A
+                    'Current_24Jam' => round(1.2 + (rand(0, 30) / 100), 2), // 1.2-1.5A
+                    'Pump_PH_Plus' => rand(0, 1),
+                    'Pump_PH_Minus' => rand(0, 1),
+                    'Pump_Nutrisi' => rand(0, 1),
+                    'Pump_24Jam' => 1 // Always on
+                ];
+                
+                $testData[] = $data;
+                
+                // Add 30 minutes
+                $current->add(new \DateInterval('PT30M'));
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Test data generated successfully',
+                'date' => $date,
+                'total_records' => count($testData),
+                'sample_data' => array_slice($testData, 0, 5),
+                'first_timestamp' => date('Y-m-d H:i:s', $testData[0]['timestamp']),
+                'last_timestamp' => date('Y-m-d H:i:s', end($testData)['timestamp'])
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Test data generation error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate test data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get historical data within date range
      */
     public function getHistoricalDataByDateRange(Request $request): JsonResponse
     {
         $request->validate([
             'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'end_date' => 'required|date',
             'limit' => 'integer|min:1|max:1000'
         ]);
 
         try {
-            $startTimestamp = strtotime($request->input('start_date'));
-            $endTimestamp = strtotime($request->input('end_date'));
+            // Properly handle date parsing with timezone
+            $startDate = new \DateTime($request->input('start_date') . ' 00:00:00', new \DateTimeZone('Asia/Jakarta'));
+            $endDate = new \DateTime($request->input('end_date') . ' 23:59:59', new \DateTimeZone('Asia/Jakarta'));
+            
+            // Convert to UTC for Firestore query since Firestore stores in UTC
+            $startDate->setTimezone(new \DateTimeZone('UTC'));
+            $endDate->setTimezone(new \DateTimeZone('UTC'));
+            
+            $startTimestamp = $startDate->getTimestamp();
+            $endTimestamp = $endDate->getTimestamp();
             $limit = $request->input('limit', 500);
+
+            Log::info('Date range query', [
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+                'start_timestamp' => $startTimestamp,
+                'end_timestamp' => $endTimestamp,
+                'start_readable' => date('Y-m-d H:i:s', $startTimestamp),
+                'end_readable' => date('Y-m-d H:i:s', $endTimestamp),
+                'timezone_note' => 'Converted to UTC for Firestore query'
+            ]);
 
             $url = "https://firestore.googleapis.com/v1/projects/{$this->projectId}/databases/(default)/documents/history";
             
@@ -316,13 +400,30 @@ class MonitoringController extends Controller
                     return null;
                 })->filter()->values();
                 
+                // Add debug information about the data range found
+                $timestamps = $formattedData->pluck('timestamp')->filter();
+                $firstTimestamp = $timestamps->min();
+                $lastTimestamp = $timestamps->max();
+                
+                Log::info('Historical data retrieved', [
+                    'total_records' => count($formattedData),
+                    'first_record_time' => $firstTimestamp ? date('Y-m-d H:i:s', $firstTimestamp) : 'none',
+                    'last_record_time' => $lastTimestamp ? date('Y-m-d H:i:s', $lastTimestamp) : 'none',
+                    'query_start' => date('Y-m-d H:i:s', $startTimestamp),
+                    'query_end' => date('Y-m-d H:i:s', $endTimestamp)
+                ]);
+                
                 return response()->json([
                     'success' => true,
                     'data' => $formattedData,
                     'total' => count($formattedData),
                     'date_range' => [
                         'start' => $request->input('start_date'),
-                        'end' => $request->input('end_date')
+                        'end' => $request->input('end_date'),
+                        'start_timestamp' => $startTimestamp,
+                        'end_timestamp' => $endTimestamp,
+                        'first_data_time' => $firstTimestamp ? date('Y-m-d H:i:s', $firstTimestamp) : null,
+                        'last_data_time' => $lastTimestamp ? date('Y-m-d H:i:s', $lastTimestamp) : null
                     ]
                 ]);
             }
