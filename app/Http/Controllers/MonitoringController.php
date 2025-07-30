@@ -147,6 +147,7 @@ class MonitoringController extends Controller
                         'Pump_PH_Minus' => false,
                         'Pump_Nutrisi' => false,
                         'Pump_24Jam' => false,
+                        'TDS_Target' => 1000, // Default TDS target
                         'timestamp' => now()->timestamp
                     ];
                     
@@ -446,6 +447,63 @@ class MonitoringController extends Controller
     }
 
     /**
+     * Update TDS Target value in Firebase RTDB
+     */
+    public function updateTdsTarget(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tds_target' => 'required|numeric|min:100|max:3000'
+        ]);
+
+        try {
+            $tdsTarget = $request->input('tds_target');
+            
+            // Check if Firebase config exists
+            if (!$this->apiKey || !$this->databaseUrl) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Firebase configuration not found'
+                ], 500);
+            }
+            
+            $url = $this->databaseUrl . "/Sensor/TDS_Target.json?auth=" . $this->apiKey;
+            
+            $response = Http::timeout(30)->put($url, $tdsTarget);
+            
+            if ($response->successful()) {
+                Log::info('TDS Target updated successfully', [
+                    'new_value' => $tdsTarget,
+                    'updated_by' => 'web_dashboard'
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'TDS Target updated successfully',
+                    'new_value' => $tdsTarget
+                ]);
+            }
+            
+            Log::error('Failed to update TDS Target', [
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update TDS Target in Firebase'
+            ], $response->status());
+            
+        } catch (\Exception $e) {
+            Log::error('TDS Target update error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal server error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get aggregated statistics
      */
     public function getStatistics(): JsonResponse
@@ -521,7 +579,7 @@ class MonitoringController extends Controller
         
         // Optional fields - don't fail if missing
         $optionalFields = [
-            'Current_3Pompa', 'Current_24Jam', 'timestamp',
+            'Current_3Pompa', 'Current_24Jam', 'timestamp', 'TDS_Target',
             'Pump_PH_Plus', 'Pump_PH_Minus', 'Pump_Nutrisi', 'Pump_24Jam'
         ];
         
@@ -552,6 +610,7 @@ class MonitoringController extends Controller
             'Temperature' => (float) ($fields['Temperature']['doubleValue'] ?? 0),
             'Current_3Pompa' => (float) ($fields['Current_3Pompa']['doubleValue'] ?? 0),
             'Current_24Jam' => (float) ($fields['Current_24Jam']['doubleValue'] ?? 0),
+            'TDS_Target' => (float) ($fields['TDS_Target']['doubleValue'] ?? 1000),
             'timestamp' => (int) ($fields['timestamp']['integerValue'] ?? 0),
             'Pump_PH_Plus' => (int) ($fields['Pump_PH_Plus']['integerValue'] ?? 0),
             'Pump_PH_Minus' => (int) ($fields['Pump_PH_Minus']['integerValue'] ?? 0),

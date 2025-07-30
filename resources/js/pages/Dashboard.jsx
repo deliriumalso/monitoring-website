@@ -22,6 +22,9 @@ const Dashboard = () => {
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [refreshInterval, setRefreshInterval] = useState(2000); // 2 seconds
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [tdsTargetEdit, setTdsTargetEdit] = useState(false);
+    const [newTdsTarget, setNewTdsTarget] = useState('');
+    const [updating, setUpdating] = useState(false);
 
     useEffect(() => {
         fetchRealtimeData();
@@ -116,6 +119,45 @@ const Dashboard = () => {
             console.error('Firebase test error:', err);
             alert(`Firebase Test Failed: ${err.response?.data?.message || err.message}`);
         }
+    };
+
+    const updateTdsTarget = async () => {
+        if (!newTdsTarget || newTdsTarget < 100 || newTdsTarget > 3000) {
+            alert('Please enter a valid TDS Target value between 100 and 3000 ppm');
+            return;
+        }
+
+        try {
+            setUpdating(true);
+            const response = await axios.post('/api/update-tds-target', {
+                tds_target: parseFloat(newTdsTarget)
+            });
+
+            if (response.data.success) {
+                alert(`TDS Target updated successfully to ${newTdsTarget} ppm`);
+                setTdsTargetEdit(false);
+                setNewTdsTarget('');
+                // Refresh data to show updated target
+                fetchRealtimeData();
+            } else {
+                alert(`Failed to update TDS Target: ${response.data.message}`);
+            }
+        } catch (err) {
+            console.error('Error updating TDS Target:', err);
+            alert(`Error updating TDS Target: ${err.response?.data?.message || err.message}`);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleTdsTargetEdit = () => {
+        setNewTdsTarget(realtimeData?.TDS_Target || 1000);
+        setTdsTargetEdit(true);
+    };
+
+    const cancelTdsTargetEdit = () => {
+        setTdsTargetEdit(false);
+        setNewTdsTarget('');
     };
 
     const getPumpStatus = (pumpValue) => {
@@ -262,7 +304,9 @@ const Dashboard = () => {
                                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">TDS</p>
                                     </div>
                                     <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.TDS || 0}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">ppm (Nutrients)</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                        ppm (Target: {realtimeData.TDS_Target || 1000})
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -297,7 +341,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* Secondary Metrics Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
                         {/* 24H Current Card */}
                         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
@@ -308,6 +352,59 @@ const Dashboard = () => {
                                     </div>
                                     <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Current_24Jam || 0}A</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Circulation Pump</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* TDS Target Card */}
+                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <ChartBarIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">TDS Target</p>
+                                    </div>
+                                    {tdsTargetEdit ? (
+                                        <div className="mt-2">
+                                            <div className="flex items-center space-x-2">
+                                                <input
+                                                    type="number"
+                                                    value={newTdsTarget}
+                                                    onChange={(e) => setNewTdsTarget(e.target.value)}
+                                                    min="100"
+                                                    max="3000"
+                                                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-20"
+                                                    disabled={updating}
+                                                />
+                                                <button
+                                                    onClick={updateTdsTarget}
+                                                    disabled={updating}
+                                                    className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded text-xs"
+                                                >
+                                                    {updating ? '...' : '✓'}
+                                                </button>
+                                                <button
+                                                    onClick={cancelTdsTargetEdit}
+                                                    disabled={updating}
+                                                    className="px-2 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded text-xs"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-between mt-2">
+                                            <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{realtimeData.TDS_Target || 1000}</p>
+                                            <button
+                                                onClick={handleTdsTargetEdit}
+                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                title="Edit TDS Target"
+                                            >
+                                                <Cog6ToothIcon className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">ppm (Setpoint)</p>
                                 </div>
                             </div>
                         </div>
