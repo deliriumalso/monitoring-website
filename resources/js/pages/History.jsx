@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    CalendarIcon, 
-    ArrowDownTrayIcon,
+    CalendarIcon,
     ChartBarIcon,
     ClockIcon,
     BeakerIcon,
@@ -43,11 +42,18 @@ const History = () => {
     const [error, setError] = useState(null);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [selectedTimeRange, setSelectedTimeRange] = useState('1d');
+    const [selectedTimeRange, setSelectedTimeRange] = useState('all');
+    const [showWorkingHoursOnly, setShowWorkingHoursOnly] = useState(false); // Changed to false by default
 
     useEffect(() => {
         console.log('History component mounted, setting initial date range');
-        setDateRangeFromTimeRange(selectedTimeRange);
+        // Set default date range dari 30 Juli 2025 sampai sekarang
+        const dataStartDate = new Date('2025-07-30');
+        const today = new Date();
+        
+        setStartDate(dataStartDate.toISOString().split('T')[0]);
+        setEndDate(today.toISOString().split('T')[0]);
+        setSelectedTimeRange('all');
     }, []);
 
     useEffect(() => {
@@ -55,13 +61,14 @@ const History = () => {
         if (startDate && endDate) {
             fetchHistoricalData();
         }
-    }, [startDate, endDate]);
+    }, [startDate, endDate, showWorkingHoursOnly]); // Added showWorkingHoursOnly dependency
 
     const setDateRangeFromTimeRange = (range) => {
         const end = new Date();
         const start = new Date();
         
-        // Get the current timezone offset for proper local time handling
+        // Data real mulai dari 30 Juli 2025
+        const dataStartDate = new Date('2025-07-30');
         const now = new Date();
         
         switch (range) {
@@ -87,9 +94,19 @@ const History = () => {
                 start.setTime(now.getTime() - (30 * 24 * 60 * 60 * 1000));
                 end.setTime(now.getTime());
                 break;
+            case 'all':
+                // Tampilkan semua data dari 30 Juli 2025
+                start.setTime(dataStartDate.getTime());
+                end.setTime(now.getTime());
+                break;
             default:
                 start.setTime(now.getTime() - (24 * 60 * 60 * 1000));
                 end.setTime(now.getTime());
+        }
+        
+        // Pastikan start date tidak lebih awal dari tanggal mulai data real
+        if (start < dataStartDate) {
+            start.setTime(dataStartDate.getTime());
         }
         
         // Format dates properly for the backend
@@ -126,8 +143,45 @@ const History = () => {
             console.log('Historical data response:', response.data);
 
             if (response.data.success) {
-                setHistoricalData(response.data.data);
-                console.log('Historical data set:', response.data.data);
+                console.log('Raw data from API:', response.data.data);
+                
+                // Debug: Check each item's timestamp and hour
+                response.data.data.forEach((item, index) => {
+                    const date = new Date(item.timestamp * 1000);
+                    const jakartaTime = date.toLocaleString("en-US", {timeZone: "Asia/Jakarta"});
+                    const jakartaDate = new Date(jakartaTime);
+                    const hour = jakartaDate.getHours();
+                    console.log(`Item ${index}:`, {
+                        timestamp: item.timestamp,
+                        date: date.toISOString(),
+                        jakartaTime: jakartaTime,
+                        hour: hour,
+                        willBeIncluded: hour >= 8 && hour <= 17
+                    });
+                });
+                
+                // Filter data based on working hours toggle
+                let filteredData = response.data.data;
+                
+                if (showWorkingHoursOnly) {
+                    filteredData = response.data.data.filter(item => {
+                        const date = new Date(item.timestamp * 1000);
+                        // Convert to Jakarta timezone
+                        const jakartaTime = date.toLocaleString("en-US", {timeZone: "Asia/Jakarta"});
+                        const jakartaDate = new Date(jakartaTime);
+                        const hour = jakartaDate.getHours();
+                        
+                        // Only include data between 8:00 AM (8) and 5:00 PM (17)
+                        return hour >= 8 && hour <= 17;
+                    });
+                    console.log('Applied working hours filter (8:00-17:00)');
+                } else {
+                    console.log('Showing all data (no working hours filter)');
+                }
+                
+                setHistoricalData(filteredData);
+                console.log('Historical data set:', filteredData);
+                console.log('Original data count:', response.data.data.length, 'Filtered count:', filteredData.length);
             } else {
                 setError(response.data.message || 'Failed to fetch historical data');
                 console.error('API returned error:', response.data.message);
@@ -159,56 +213,22 @@ const History = () => {
         }
     };
 
-    const exportToCSV = () => {
-        if (historicalData.length === 0) return;
-
-        const headers = ['Date/Time', 'pH', 'TDS (ppm)', 'Temperature (°C)', 'Current 3-Pump (A)', 'Current 24h (A)', 'pH Plus Pump', 'pH Minus Pump', 'Nutrient Pump', 'Circulation Pump'];
-        
-        const csvContent = [
-            headers.join(','),
-            ...historicalData.map(row => [
-                new Date(row.timestamp * 1000).toLocaleString('id-ID', {
-                    timeZone: 'Asia/Jakarta',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }),
-                row.pH,
-                row.TDS,
-                row.Temperature,
-                row.Current_3Pompa,
-                row.Current_24Jam,
-                row.Pump_PH_Plus ? 'Active' : 'Inactive',
-                row.Pump_PH_Minus ? 'Active' : 'Inactive',
-                row.Pump_Nutrisi ? 'Active' : 'Inactive',
-                row.Pump_24Jam ? 'Active' : 'Inactive'
-            ].join(','))
-        ].join('\\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `hydroponic_data_${startDate}_to_${endDate}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    };
-
     // Prepare chart data
     const prepareChartData = (data, field, color) => {
         // Adjust point size based on data length (more data = smaller points)
         const pointRadius = data.length > 100 ? 1 : data.length > 48 ? 1.5 : 2;
         const pointHoverRadius = data.length > 100 ? 3 : data.length > 48 ? 4 : 6;
         
+        // Sort data by timestamp untuk memastikan urutan yang benar
+        const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
+        
         return {
-            labels: data.map(item => new Date(item.timestamp * 1000)),
+            labels: sortedData.map(item => new Date(item.timestamp * 1000)),
             datasets: [
                 {
                     label: field,
-                    data: data.map(item => ({
-                        x: new Date(item.timestamp * 1000), // Use Date object for proper timezone handling
+                    data: sortedData.map(item => ({
+                        x: new Date(item.timestamp * 1000), // Gunakan Date object dengan timezone Jakarta
                         y: parseFloat(item[field]) || 0
                     })),
                     borderColor: color,
@@ -259,13 +279,16 @@ const History = () => {
                         return `${yAxisLabel}: ${context.parsed.y}`;
                     },
                     title: function(context) {
-                        return new Date(context[0].parsed.x).toLocaleString('id-ID', {
+                        const date = new Date(context[0].parsed.x);
+                        return date.toLocaleString('id-ID', {
                             timeZone: 'Asia/Jakarta',
+                            weekday: 'short',
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit',
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
+                            second: '2-digit'
                         });
                     }
                 }
@@ -277,22 +300,32 @@ const History = () => {
                 time: {
                     displayFormats: {
                         minute: 'HH:mm',
-                        hour: 'HH:mm',
+                        hour: 'DD/MM HH:mm',
                         day: 'DD/MM HH:mm',
                         week: 'DD/MM',
-                        month: 'DD/MM'
+                        month: 'MM/YY'
                     },
-                    unit: historicalData.length <= 48 ? 'hour' : historicalData.length <= 144 ? 'day' : 'week',
-                    stepSize: historicalData.length <= 48 ? 1 : 1,
-                    // Remove timezone as Chart.js handles it differently
+                    unit: historicalData.length <= 48 ? 'hour' : historicalData.length <= 168 ? 'hour' : 'day',
+                    stepSize: historicalData.length <= 24 ? 2 : historicalData.length <= 48 ? 4 : historicalData.length <= 168 ? 6 : 12,
+                    tooltipFormat: 'DD/MM/YYYY HH:mm'
                 },
                 grid: {
                     color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
                 },
                 ticks: {
                     color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280',
-                    maxTicksLimit: 12,
-                    // Let Chart.js handle the formatting automatically
+                    maxTicksLimit: 8,
+                    callback: function(value, index, values) {
+                        const date = new Date(value);
+                        // Format untuk menampilkan tanggal dan jam
+                        return date.toLocaleString('id-ID', {
+                            timeZone: 'Asia/Jakarta',
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
                 }
             },
             y: {
@@ -315,18 +348,22 @@ const History = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Historical Data</h2>
-                        <p className="text-gray-600 dark:text-gray-400">View sensor trends and historical analysis</p>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            View sensor trends and historical analysis (Real data from July 30, 2025)
+                            {showWorkingHoursOnly && ' - Working hours: 08:00 - 17:00 WIB'}
+                        </p>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col gap-4">
                         {/* Time Range Buttons */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                             {[
                                 { value: '12h', label: '12H' },
                                 { value: '1d', label: '1D' },
                                 { value: '3d', label: '3D' },
                                 { value: '7d', label: '7D' },
-                                { value: '30d', label: '30D' }
+                                { value: '30d', label: '30D' },
+                                { value: 'all', label: 'All Data' }
                             ].map((range) => (
                                 <button
                                     key={range.value}
@@ -342,38 +379,46 @@ const History = () => {
                             ))}
                         </div>
 
-                        {/* Date Range Picker */}
-                        <div className="flex gap-2 items-center">
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            />
-                            <span className="text-gray-500 dark:text-gray-400">to</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            />
-                            <button
-                                onClick={handleDateSearch}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
-                            >
-                                Search
-                            </button>
+                        <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                            {/* Date Range Picker */}
+                            <div className="flex gap-2 items-center">
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                />
+                                <span className="text-gray-500 dark:text-gray-400">to</span>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                />
+                                <button
+                                    onClick={handleDateSearch}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+                                >
+                                    Search
+                                </button>
+                            </div>
+                            
+                            {/* Working Hours Filter Toggle */}
+                            <div className="flex items-center gap-2">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={showWorkingHoursOnly}
+                                        onChange={(e) => setShowWorkingHoursOnly(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+                                    <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                        Working Hours Only (8AM-5PM)
+                                    </span>
+                                </label>
+                            </div>
                         </div>
-
-                        {/* Export Button */}
-                        <button
-                            onClick={exportToCSV}
-                            disabled={historicalData.length === 0}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
-                        >
-                            <ArrowDownTrayIcon className="h-4 w-4" />
-                            Export CSV
-                        </button>
                     </div>
                 </div>
             </div>
@@ -437,11 +482,14 @@ const History = () => {
                         <div className="h-80">
                             <Line
                                 data={{
-                                    labels: historicalData.map(item => new Date(item.timestamp * 1000)),
+                                    labels: [...historicalData].sort((a, b) => a.timestamp - b.timestamp).map(item => new Date(item.timestamp * 1000)),
                                     datasets: [
                                         {
                                             label: '3-Pump Current',
-                                            data: historicalData.map(item => item.Current_3Pompa),
+                                            data: [...historicalData].sort((a, b) => a.timestamp - b.timestamp).map(item => ({
+                                                x: new Date(item.timestamp * 1000),
+                                                y: item.Current_3Pompa
+                                            })),
                                             borderColor: '#10B981',
                                             backgroundColor: '#10B98120',
                                             fill: false,
@@ -452,7 +500,10 @@ const History = () => {
                                         },
                                         {
                                             label: '24h Current',
-                                            data: historicalData.map(item => item.Current_24Jam),
+                                            data: [...historicalData].sort((a, b) => a.timestamp - b.timestamp).map(item => ({
+                                                x: new Date(item.timestamp * 1000),
+                                                y: item.Current_24Jam
+                                            })),
                                             borderColor: '#6366F1',
                                             backgroundColor: '#6366F120',
                                             fill: false,
@@ -484,12 +535,20 @@ const History = () => {
             ) : (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
                     <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No historical data found</h3>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                        {showWorkingHoursOnly ? 'No working hours data found' : 'No historical data found'}
+                    </h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        No data available for the selected date range: {startDate} to {endDate}
+                        {showWorkingHoursOnly 
+                            ? `No data available during working hours (08:00 - 17:00 WIB) for: ${startDate} to ${endDate}`
+                            : `No data available for the selected date range: ${startDate} to ${endDate}`
+                        }
                     </p>
                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                        Try selecting a different date range. Data is collected every 30 minutes.
+                        {showWorkingHoursOnly 
+                            ? 'Try selecting a different date range or disable working hours filter. Real data available from July 30, 2025.'
+                            : 'Try selecting a different date range. Real data available from July 30, 2025.'
+                        }
                     </p>
                     {error && (
                         <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md max-w-md mx-auto">
@@ -502,7 +561,12 @@ const History = () => {
             {/* Statistics Summary */}
             {historicalData.length > 0 && (
                 <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Data Summary</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Data Summary</h3>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {showWorkingHoursOnly ? 'Working Hours (08:00 - 17:00 WIB)' : 'All Hours'}
+                        </span>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
