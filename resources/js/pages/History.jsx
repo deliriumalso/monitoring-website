@@ -43,7 +43,6 @@ const History = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [selectedTimeRange, setSelectedTimeRange] = useState('all');
-    const [showWorkingHoursOnly, setShowWorkingHoursOnly] = useState(false); // Changed to false by default
 
     useEffect(() => {
         console.log('History component mounted, setting initial date range');
@@ -61,7 +60,7 @@ const History = () => {
         if (startDate && endDate) {
             fetchHistoricalData();
         }
-    }, [startDate, endDate, showWorkingHoursOnly]); // Added showWorkingHoursOnly dependency
+    }, [startDate, endDate]); // Removed showWorkingHoursOnly dependency
 
     const setDateRangeFromTimeRange = (range) => {
         const end = new Date();
@@ -160,28 +159,12 @@ const History = () => {
                     });
                 });
                 
-                // Filter data based on working hours toggle
+                // No filtering needed - show all data
                 let filteredData = response.data.data;
-                
-                if (showWorkingHoursOnly) {
-                    filteredData = response.data.data.filter(item => {
-                        const date = new Date(item.timestamp * 1000);
-                        // Convert to Jakarta timezone
-                        const jakartaTime = date.toLocaleString("en-US", {timeZone: "Asia/Jakarta"});
-                        const jakartaDate = new Date(jakartaTime);
-                        const hour = jakartaDate.getHours();
-                        
-                        // Only include data between 8:00 AM (8) and 5:00 PM (17)
-                        return hour >= 8 && hour <= 17;
-                    });
-                    console.log('Applied working hours filter (8:00-17:00)');
-                } else {
-                    console.log('Showing all data (no working hours filter)');
-                }
                 
                 setHistoricalData(filteredData);
                 console.log('Historical data set:', filteredData);
-                console.log('Original data count:', response.data.data.length, 'Filtered count:', filteredData.length);
+                console.log('Data count:', filteredData.length);
             } else {
                 setError(response.data.message || 'Failed to fetch historical data');
                 console.error('API returned error:', response.data.message);
@@ -344,13 +327,12 @@ const History = () => {
     return (
         <div className="space-y-6">
             {/* Header & Controls */}
-            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Historical Data</h2>
-                        <p className="text-gray-600 dark:text-gray-400">
+                        <h2 className="text-2xl font-bold text-gray-900">Historical Data</h2>
+                        <p className="text-gray-600">
                             View sensor trends and historical analysis (Real data from July 30, 2025)
-                            {showWorkingHoursOnly && ' - Working hours: 08:00 - 17:00 WIB'}
                         </p>
                     </div>
                     
@@ -371,7 +353,7 @@ const History = () => {
                                     className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
                                         selectedTimeRange === range.value
                                             ? 'bg-emerald-600 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                                 >
                                     {range.label}
@@ -386,14 +368,14 @@ const History = () => {
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900"
                                 />
-                                <span className="text-gray-500 dark:text-gray-400">to</span>
+                                <span className="text-gray-500">to</span>
                                 <input
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900"
                                 />
                                 <button
                                     onClick={handleDateSearch}
@@ -401,22 +383,6 @@ const History = () => {
                                 >
                                     Search
                                 </button>
-                            </div>
-                            
-                            {/* Working Hours Filter Toggle */}
-                            <div className="flex items-center gap-2">
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={showWorkingHoursOnly}
-                                        onChange={(e) => setShowWorkingHoursOnly(e.target.checked)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
-                                    <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                                        Working Hours Only (8AM-5PM)
-                                    </span>
-                                </label>
                             </div>
                         </div>
                     </div>
@@ -426,16 +392,16 @@ const History = () => {
             {/* Charts Grid */}
             {loading ? (
                 <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 dark:border-emerald-400"></div>
-                    <span className="ml-4 text-gray-600 dark:text-gray-400">Loading historical data...</span>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+                    <span className="ml-4 text-gray-600">Loading historical data...</span>
                 </div>
             ) : historicalData.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* pH Chart */}
-                    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                         <div className="flex items-center mb-4">
-                            <BeakerIcon className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">pH Level Trend</h3>
+                            <BeakerIcon className="h-6 w-6 text-blue-600 mr-2" />
+                            <h3 className="text-lg font-semibold text-gray-900">pH Level Trend</h3>
                         </div>
                         <div className="h-80">
                             <Line
@@ -446,10 +412,10 @@ const History = () => {
                     </div>
 
                     {/* TDS Chart */}
-                    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                         <div className="flex items-center mb-4">
-                            <ChartBarIcon className="h-6 w-6 text-purple-600 dark:text-purple-400 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TDS Level Trend</h3>
+                            <ChartBarIcon className="h-6 w-6 text-purple-600 mr-2" />
+                            <h3 className="text-lg font-semibold text-gray-900">TDS Level Trend</h3>
                         </div>
                         <div className="h-80">
                             <Line
@@ -460,10 +426,10 @@ const History = () => {
                     </div>
 
                     {/* Temperature Chart */}
-                    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                         <div className="flex items-center mb-4">
-                            <FireIcon className="h-6 w-6 text-orange-600 dark:text-orange-400 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Temperature Trend</h3>
+                            <FireIcon className="h-6 w-6 text-orange-600 mr-2" />
+                            <h3 className="text-lg font-semibold text-gray-900">Temperature Trend</h3>
                         </div>
                         <div className="h-80">
                             <Line
@@ -474,10 +440,10 @@ const History = () => {
                     </div>
 
                     {/* Current Consumption Chart */}
-                    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                         <div className="flex items-center mb-4">
-                            <BoltIcon className="h-6 w-6 text-green-600 dark:text-green-400 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Current Consumption</h3>
+                            <BoltIcon className="h-6 w-6 text-green-600 mr-2" />
+                            <h3 className="text-lg font-semibold text-gray-900">Current Consumption</h3>
                         </div>
                         <div className="h-80">
                             <Line
@@ -533,26 +499,18 @@ const History = () => {
                     </div>
                 </div>
             ) : (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-                    <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                        {showWorkingHoursOnly ? 'No working hours data found' : 'No historical data found'}
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {showWorkingHoursOnly 
-                            ? `No data available during working hours (08:00 - 17:00 WIB) for: ${startDate} to ${endDate}`
-                            : `No data available for the selected date range: ${startDate} to ${endDate}`
-                        }
+                <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-gray-200">
+                    <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No historical data found</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                        No data available for the selected date range: {startDate} to {endDate}
                     </p>
-                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                        {showWorkingHoursOnly 
-                            ? 'Try selecting a different date range or disable working hours filter. Real data available from July 30, 2025.'
-                            : 'Try selecting a different date range. Real data available from July 30, 2025.'
-                        }
+                    <p className="mt-1 text-xs text-gray-400">
+                        Try selecting a different date range. Real data available from July 30, 2025.
                     </p>
                     {error && (
-                        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md max-w-md mx-auto">
-                            <p className="text-sm text-red-600 dark:text-red-400">Error: {error}</p>
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md max-w-md mx-auto">
+                            <p className="text-sm text-red-600">Error: {error}</p>
                         </div>
                     )}
                 </div>
@@ -560,43 +518,43 @@ const History = () => {
 
             {/* Statistics Summary */}
             {historicalData.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Data Summary</h3>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                            {showWorkingHoursOnly ? 'Working Hours (08:00 - 17:00 WIB)' : 'All Hours'}
+                        <h3 className="text-lg font-semibold text-gray-900">Data Summary</h3>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            All Data
                         </span>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            <div className="text-2xl font-bold text-blue-600">
                                 {(historicalData.reduce((sum, item) => sum + item.pH, 0) / historicalData.length).toFixed(1)}
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Avg pH</div>
+                            <div className="text-sm text-gray-600">Avg pH</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                            <div className="text-2xl font-bold text-purple-600">
                                 {Math.round(historicalData.reduce((sum, item) => sum + item.TDS, 0) / historicalData.length)}
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Avg TDS</div>
+                            <div className="text-sm text-gray-600">Avg TDS</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            <div className="text-2xl font-bold text-orange-600">
                                 {(historicalData.reduce((sum, item) => sum + item.Temperature, 0) / historicalData.length).toFixed(1)}°C
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Avg Temp</div>
+                            <div className="text-sm text-gray-600">Avg Temp</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            <div className="text-2xl font-bold text-green-600">
                                 {(historicalData.reduce((sum, item) => sum + item.Current_3Pompa, 0) / historicalData.length).toFixed(2)}A
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Avg 3P Current</div>
+                            <div className="text-sm text-gray-600">Avg 3P Current</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                            <div className="text-2xl font-bold text-indigo-600">
                                 {historicalData.length}
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Total Records</div>
+                            <div className="text-sm text-gray-600">Total Records</div>
                         </div>
                     </div>
                 </div>

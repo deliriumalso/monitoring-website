@@ -22,6 +22,21 @@ export const ThemeProvider = ({ children }) => {
 
     const [isTransitioning, setIsTransitioning] = useState(false);
 
+    // Initial theme setup
+    useEffect(() => {
+        const initTheme = () => {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        };
+        
+        initTheme();
+    }, []);
+
     useEffect(() => {
         // Apply theme to document with smooth transition
         const applyTheme = (dark) => {
@@ -33,20 +48,16 @@ export const ThemeProvider = ({ children }) => {
             if (dark) {
                 document.documentElement.classList.add('dark');
                 document.documentElement.style.colorScheme = 'dark';
-                document.body.style.backgroundColor = '#111827';
-                document.body.style.color = '#f9fafb';
             } else {
                 document.documentElement.classList.remove('dark');
                 document.documentElement.style.colorScheme = 'light';
-                document.body.style.backgroundColor = '#f9fafb';
-                document.body.style.color = '#111827';
             }
             
             // Remove transition class after animation
             setTimeout(() => {
                 document.documentElement.classList.remove('theme-transition');
                 setIsTransitioning(false);
-            }, 200);
+            }, 300);
         };
 
         applyTheme(isDark);
@@ -74,8 +85,17 @@ export const ThemeProvider = ({ children }) => {
             .theme-transition *,
             .theme-transition *:before,
             .theme-transition *:after {
-                transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+                transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
                 transition-delay: 0 !important;
+            }
+            
+            /* Ensure proper dark mode styling */
+            html.dark {
+                color-scheme: dark;
+            }
+            
+            html:not(.dark) {
+                color-scheme: light;
             }
         `;
         document.head.appendChild(style);
@@ -88,9 +108,20 @@ export const ThemeProvider = ({ children }) => {
     }, []);
 
     const toggleTheme = () => {
-        setIsDark(!isDark);
+        const newTheme = !isDark;
+        console.log('Toggling theme from', isDark ? 'dark' : 'light', 'to', newTheme ? 'dark' : 'light');
+        
+        setIsDark(newTheme);
         // Mark that user has manually set a preference
         localStorage.setItem('theme-user-preference', 'true');
+        localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+        
+        // Force immediate class update
+        if (newTheme) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     };
 
     const setTheme = (theme) => {

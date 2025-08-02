@@ -165,15 +165,15 @@ const Dashboard = () => {
     };
 
     const getPumpStatusColor = (pumpValue) => {
-        return pumpValue ? 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' : 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-300';
+        return pumpValue ? 'text-green-600 bg-green-100' : 'text-gray-600 bg-gray-100';
     };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 dark:border-emerald-400 mx-auto"></div>
-                    <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading dashboard...</p>
                 </div>
             </div>
         );
@@ -182,13 +182,13 @@ const Dashboard = () => {
     if (error) {
         return (
             <div className="space-y-6">
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <ExclamationTriangleIcon className="h-6 w-6 text-red-600 dark:text-red-400 mr-3" />
+                            <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3" />
                             <div>
-                                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Connection Error</h3>
-                                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+                                <h3 className="text-sm font-medium text-red-800">Connection Error</h3>
+                                <p className="text-sm text-red-700 mt-1">{error}</p>
                             </div>
                         </div>
                         <button
@@ -204,9 +204,9 @@ const Dashboard = () => {
                     </div>
                 </div>
                 
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Troubleshooting Steps:</h3>
-                    <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <h3 className="text-sm font-medium text-blue-800 mb-2">Troubleshooting Steps:</h3>
+                    <ul className="text-sm text-blue-700 space-y-1">
                         <li>• Check if Laravel server is running on port 8000</li>
                         <li>• Verify Firebase configuration in .env file</li>
                         <li>• Check network connection</li>
@@ -220,13 +220,13 @@ const Dashboard = () => {
     return (
         <div className="space-y-6">
             {/* Header with Controls */}
-            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Hydroponic Dashboard</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">Real-time monitoring and system control</p>
+                        <h1 className="text-3xl font-bold text-gray-900">Hydroponic Dashboard</h1>
+                        <p className="text-gray-600 mt-1">Real-time monitoring and system control</p>
                         {lastUpdate && (
-                            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                            <p className="text-sm text-gray-500 mt-1">
                                 Last updated: {lastUpdate.toLocaleTimeString()}
                             </p>
                         )}
@@ -234,11 +234,11 @@ const Dashboard = () => {
                     
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Refresh:</label>
+                            <label className="text-sm font-medium text-gray-700">Refresh:</label>
                             <select
                                 value={refreshInterval}
                                 onChange={(e) => setRefreshInterval(parseInt(e.target.value))}
-                                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900"
                             >
                                 <option value={1000}>1s</option>
                                 <option value={2000}>2s</option>
@@ -252,7 +252,7 @@ const Dashboard = () => {
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2 ${
                                 autoRefresh 
                                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700 '
                             }`}
                         >
                             {autoRefresh ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
@@ -282,29 +282,29 @@ const Dashboard = () => {
                     {/* Sensor Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* pH Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <BeakerIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">pH Level</p>
+                                        <BeakerIcon className="h-6 w-6 text-blue-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">pH Level</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.pH || 0}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Acidity Level</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.pH || 0}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Acidity Level</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* TDS Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <ChartBarIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">TDS</p>
+                                        <ChartBarIcon className="h-6 w-6 text-purple-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">TDS</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.TDS || 0}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.TDS || 0}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
                                         ppm (Target: {realtimeData.TDS_Target || 1000})
                                     </p>
                                 </div>
@@ -312,29 +312,29 @@ const Dashboard = () => {
                         </div>
 
                         {/* 3-Pump Current Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <BoltIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">3-Pump Current</p>
+                                        <BoltIcon className="h-6 w-6 text-yellow-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">3-Pump Current</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Current_3Pompa || 0}A</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">3-Pump System</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Current_3Pompa || 0}A</p>
+                                    <p className="text-xs text-gray-500 mt-1">3-Pump System</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Temperature Card - Moved to the right */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <FireIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Temperature</p>
+                                        <FireIcon className="h-6 w-6 text-red-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">Temperature</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Temperature || 0}°C</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Water Temperature</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Temperature || 0}°C</p>
+                                    <p className="text-xs text-gray-500 mt-1">Water Temperature</p>
                                 </div>
                             </div>
                         </div>
@@ -343,26 +343,26 @@ const Dashboard = () => {
                     {/* Secondary Metrics Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
                         {/* 24H Current Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <BoltIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">24H Current</p>
+                                        <BoltIcon className="h-6 w-6 text-emerald-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">24H Current</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mt-2">{realtimeData.Current_24Jam || 0}A</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Circulation Pump</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Current_24Jam || 0}A</p>
+                                    <p className="text-xs text-gray-500 mt-1">Circulation Pump</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* TDS Target Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <ChartBarIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">TDS Target</p>
+                                        <ChartBarIcon className="h-6 w-6 text-orange-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">TDS Target</p>
                                     </div>
                                     {tdsTargetEdit ? (
                                         <div className="mt-2">
@@ -373,7 +373,7 @@ const Dashboard = () => {
                                                     onChange={(e) => setNewTdsTarget(e.target.value)}
                                                     min="100"
                                                     max="3000"
-                                                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-20"
+                                                    className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-gray-900 w-20"
                                                     disabled={updating}
                                                 />
                                                 <button
@@ -394,56 +394,56 @@ const Dashboard = () => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-between mt-2">
-                                            <p className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{realtimeData.TDS_Target || 1000}</p>
+                                            <p className="text-2xl lg:text-3xl font-bold text-gray-900 ">{realtimeData.TDS_Target || 1000}</p>
                                             <button
                                                 onClick={handleTdsTargetEdit}
-                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                className="text-gray-400 hover:text-gray-600 "
                                                 title="Edit TDS Target"
                                             >
                                                 <Cog6ToothIcon className="h-4 w-4" />
                                             </button>
                                         </div>
                                     )}
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">ppm (Setpoint)</p>
+                                    <p className="text-xs text-gray-500 mt-1">ppm (Setpoint)</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* System Status Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <Cog6ToothIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">System Status</p>
+                                        <Cog6ToothIcon className="h-6 w-6 text-indigo-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">System Status</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-green-600 dark:text-green-400 mt-2">Online</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">All Systems Active</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-green-600 mt-2">Online</p>
+                                    <p className="text-xs text-gray-500 mt-1">All Systems Active</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Last Update Card */}
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <ClockIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Update</p>
+                                        <ClockIcon className="h-6 w-6 text-gray-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">Last Update</p>
                                     </div>
-                                    <p className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white mt-2">
+                                    <p className="text-lg lg:text-xl font-bold text-gray-900 mt-2">
                                         {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
                                     </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Real-time Data</p>
+                                    <p className="text-xs text-gray-500 mt-1">Real-time Data</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Pump Status */}
-                    <div className="mt-8 bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                            <Cog6ToothIcon className="h-6 w-6 mr-2 text-gray-600 dark:text-gray-400" />
+                    <div className="mt-8 bg-white shadow-lg rounded-xl p-6 border border-gray-200 ">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                            <Cog6ToothIcon className="h-6 w-6 mr-2 text-gray-600 " />
                             Pump Control System
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -476,17 +476,17 @@ const Dashboard = () => {
 
                     {/* Charts */}
                     {historicalData.length > 0 && (
-                        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                                <ChartBarIcon className="h-6 w-6 mr-2 text-gray-600 dark:text-gray-400" />
+                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 ">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                                <ChartBarIcon className="h-6 w-6 mr-2 text-gray-600 " />
                                 Recent Trends (Last 20 readings)
                             </h3>
                             
                             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                                 {/* pH Chart */}
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                                        <BeakerIcon className="h-4 w-4 mr-1 text-blue-600 dark:text-blue-400" />
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <BeakerIcon className="h-4 w-4 mr-1 text-blue-600 " />
                                         pH Level
                                     </h4>
                                     <ResponsiveContainer width="100%" height={200}>
@@ -515,9 +515,9 @@ const Dashboard = () => {
                                 </div>
 
                                 {/* TDS Chart */}
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                                        <ChartBarIcon className="h-4 w-4 mr-1 text-purple-600 dark:text-purple-400" />
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <ChartBarIcon className="h-4 w-4 mr-1 text-purple-600 " />
                                         TDS Level
                                     </h4>
                                     <ResponsiveContainer width="100%" height={200}>
@@ -546,9 +546,9 @@ const Dashboard = () => {
                                 </div>
 
                                 {/* Temperature Chart */}
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                                        <FireIcon className="h-4 w-4 mr-1 text-red-600 dark:text-red-400" />
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <FireIcon className="h-4 w-4 mr-1 text-red-600 " />
                                         Temperature
                                     </h4>
                                     <ResponsiveContainer width="100%" height={200}>
@@ -577,9 +577,9 @@ const Dashboard = () => {
                                 </div>
 
                                 {/* Current Chart */}
-                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                                        <BoltIcon className="h-4 w-4 mr-1 text-yellow-600 dark:text-yellow-400" />
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                                        <BoltIcon className="h-4 w-4 mr-1 text-yellow-600 " />
                                         Current Consumption
                                     </h4>
                                     <ResponsiveContainer width="100%" height={200}>

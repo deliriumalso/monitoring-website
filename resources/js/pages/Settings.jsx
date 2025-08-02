@@ -169,14 +169,14 @@ const Settings = () => {
             </div>
 
             {/* Information */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                 <div className="flex">
                     <InformationCircleIcon className="h-5 w-5 text-blue-400" />
                     <div className="ml-3">
-                        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        <h3 className="text-sm font-medium text-blue-800 ">
                             Configuration Notes
                         </h3>
-                        <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                        <div className="mt-2 text-sm text-blue-700 ">
                             <ul className="list-disc list-inside space-y-1">
                                 <li>Lower refresh intervals may increase data usage and server load</li>
                                 <li>Data retention settings help manage database size and performance</li>

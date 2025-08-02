@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import Layout from './components/Layout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import History from './pages/History.jsx';
@@ -68,31 +67,27 @@ function MainApp() {
     // If user is not authenticated, show login/register pages
     if (!user) {
         return (
-            <ThemeProvider>
-                <Routes>
-                    <Route path="/login" element={<Login onLogin={handleLogin} />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
-            </ThemeProvider>
+            <Routes>
+                <Route path="/login" element={<Login onLogin={handleLogin} />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
         );
     }
 
     // If user is authenticated, show main application
     return (
-        <ThemeProvider>
-            <Layout user={user} onLogout={handleLogout}>
-                <Routes>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/register" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-            </Layout>
-        </ThemeProvider>
+        <Layout user={user} onLogout={handleLogout}>
+            <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+        </Layout>
     );
 }
 

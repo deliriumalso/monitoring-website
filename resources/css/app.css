@@ -11,16 +11,19 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Dark mode configuration */
-@media (prefers-color-scheme: dark) {
-    :root {
-        color-scheme: dark;
-    }
+/* Root element styling */
+:root {
+    color-scheme: light;
 }
 
-/* Smooth transitions for theme changes */
+/* Smooth transitions */
 * {
-    transition-property: background-color, border-color, color, fill, stroke;
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent transition on page load */
+.no-transition * {
+    transition: none !important;
 }
