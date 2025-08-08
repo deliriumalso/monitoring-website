@@ -579,7 +579,7 @@ class MonitoringController extends Controller
         
         // Optional fields - don't fail if missing
         $optionalFields = [
-            'Current_3Pompa', 'Current_24Jam', 'timestamp', 'TDS_Target',
+            'Current_12V', 'Current_5V', 'timestamp', 'TDS_Target',
             'Pump_PH_Plus', 'Pump_PH_Minus', 'Pump_Nutrisi', 'Pump_24Jam'
         ];
         
@@ -608,8 +608,8 @@ class MonitoringController extends Controller
             'pH' => (float) ($fields['pH']['doubleValue'] ?? 0),
             'TDS' => (float) ($fields['TDS']['doubleValue'] ?? 0),
             'Temperature' => (float) ($fields['Temperature']['doubleValue'] ?? 0),
-            'Current_3Pompa' => (float) ($fields['Current_3Pompa']['doubleValue'] ?? 0),
-            'Current_24Jam' => (float) ($fields['Current_24Jam']['doubleValue'] ?? 0),
+            'Current_12V' => (float) ($fields['Current_12V']['doubleValue'] ?? 0),
+            'Current_5V' => (float) ($fields['Current_5V']['doubleValue'] ?? 0),
             'TDS_Target' => (float) ($fields['TDS_Target']['doubleValue'] ?? 1000),
             'timestamp' => (int) ($fields['timestamp']['integerValue'] ?? 0),
             'Pump_PH_Plus' => (int) ($fields['Pump_PH_Plus']['integerValue'] ?? 0),
@@ -680,8 +680,8 @@ class MonitoringController extends Controller
         $ph = $data['pH'] ?? 0;
         $tds = $data['TDS'] ?? 0;
         $temp = $data['Temperature'] ?? 0;
-        $current3 = $data['Current_3Pompa'] ?? 0;
-        $current24 = $data['Current_24Jam'] ?? 0;
+        $current12V = $data['Current_12V'] ?? 0;
+        $current5V = $data['Current_5V'] ?? 0;
         
         if ($ph < 5.0) {
             $alerts[] = [
@@ -731,21 +731,21 @@ class MonitoringController extends Controller
             ];
         }
         
-        if ($current3 > 1.5) {
+        if ($current12V > 1.5) {
             $alerts[] = [
                 'type' => 'warning',
-                'message' => 'High current on 3-pump system',
-                'value' => $current3,
-                'recommended_action' => 'Check pump conditions'
+                'message' => 'High current on 12V system',
+                'value' => $current12V,
+                'recommended_action' => 'Check 12V pump conditions'
             ];
         }
         
-        if ($current24 > 1.5) {
+        if ($current5V > 1.5) {
             $alerts[] = [
                 'type' => 'warning',
-                'message' => 'High current on 24h pump',
-                'value' => $current24,
-                'recommended_action' => 'Check circulation pump'
+                'message' => 'High current on 5V system',
+                'value' => $current5V,
+                'recommended_action' => 'Check 5V circulation pump'
             ];
         }
         

@@ -31,8 +31,8 @@ function sendToFirestore($data, $API_KEY, $PROJECT_ID) {
         "pH" => ["doubleValue" => $data['pH']],
         "TDS" => ["doubleValue" => $data['TDS']],
         "Temperature" => ["doubleValue" => $data['Temperature']],
-        "Current_3Pompa" => ["doubleValue" => $data['Current_3Pompa']],
-        "Current_24Jam" => ["doubleValue" => $data['Current_24Jam']],
+        "Current_12V" => ["doubleValue" => $data['Current_12V']],
+        "Current_5V" => ["doubleValue" => $data['Current_5V']],
         "timestamp" => ["integerValue" => $data['timestamp']],
         "Pump_PH_Plus" => ["integerValue" => $data['Pump_PH_Plus']],
         "Pump_PH_Minus" => ["integerValue" => $data['Pump_PH_Minus']],
@@ -57,8 +57,8 @@ function generateRandomData() {
     $ph = mt_rand(50, 80) / 10; // 5.0 - 8.0
     $tds = mt_rand(500, 1300); // 500 - 1300 ppm
     $temperature = mt_rand(240, 300) / 10; // 24.0 - 30.0
-    $current_3pompa = mt_rand(0, 200) / 100; // 0.00 - 2.00
-    $current_24jam = mt_rand(0, 200) / 100;  // 0.00 - 2.00
+    $current_12v = mt_rand(0, 200) / 100; // 0.00 - 2.00
+    $current_5v = mt_rand(0, 200) / 100;  // 0.00 - 2.00
     $timestamp = time();
     $pump_ph_plus = rand(0, 1);
     $pump_ph_minus = rand(0, 1);
@@ -69,8 +69,8 @@ function generateRandomData() {
         "pH" => $ph,
         "TDS" => $tds,
         "Temperature" => $temperature,
-        "Current_3Pompa" => $current_3pompa,
-        "Current_24Jam" => $current_24jam,
+        "Current_12V" => $current_12v,
+        "Current_5V" => $current_5v,
         "timestamp" => $timestamp,
         "Pump_PH_Plus" => $pump_ph_plus,
         "Pump_PH_Minus" => $pump_ph_minus,

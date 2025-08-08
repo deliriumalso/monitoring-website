@@ -451,10 +451,10 @@ const History = () => {
                                     labels: [...historicalData].sort((a, b) => a.timestamp - b.timestamp).map(item => new Date(item.timestamp * 1000)),
                                     datasets: [
                                         {
-                                            label: '3-Pump Current',
+                                            label: '12V Current',
                                             data: [...historicalData].sort((a, b) => a.timestamp - b.timestamp).map(item => ({
                                                 x: new Date(item.timestamp * 1000),
-                                                y: item.Current_3Pompa
+                                                y: item.Current_12V
                                             })),
                                             borderColor: '#10B981',
                                             backgroundColor: '#10B98120',
@@ -465,10 +465,10 @@ const History = () => {
                                             borderWidth: 2
                                         },
                                         {
-                                            label: '24h Current',
+                                            label: '5V Current',
                                             data: [...historicalData].sort((a, b) => a.timestamp - b.timestamp).map(item => ({
                                                 x: new Date(item.timestamp * 1000),
-                                                y: item.Current_24Jam
+                                                y: item.Current_5V
                                             })),
                                             borderColor: '#6366F1',
                                             backgroundColor: '#6366F120',
@@ -546,9 +546,9 @@ const History = () => {
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-green-600">
-                                {(historicalData.reduce((sum, item) => sum + item.Current_3Pompa, 0) / historicalData.length).toFixed(2)}A
+                                {(historicalData.reduce((sum, item) => sum + item.Current_12V, 0) / historicalData.length).toFixed(2)}A
                             </div>
-                            <div className="text-sm text-gray-600">Avg 3P Current</div>
+                            <div className="text-sm text-gray-600">Avg 12V Current</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-indigo-600">

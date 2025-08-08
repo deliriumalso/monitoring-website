@@ -317,10 +317,10 @@ const Dashboard = () => {
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
                                         <BoltIcon className="h-6 w-6 text-yellow-600 " />
-                                        <p className="text-sm font-medium text-gray-600 ">3-Pump Current</p>
+                                        <p className="text-sm font-medium text-gray-600 ">12V Current</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Current_3Pompa || 0}A</p>
-                                    <p className="text-xs text-gray-500 mt-1">3-Pump System</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Current_12V || 0}A</p>
+                                    <p className="text-xs text-gray-500 mt-1">12V System</p>
                                 </div>
                             </div>
                         </div>
@@ -342,16 +342,16 @@ const Dashboard = () => {
 
                     {/* Secondary Metrics Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
-                        {/* 24H Current Card */}
+                        {/* 5V Current Card */}
                         <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
                                         <BoltIcon className="h-6 w-6 text-emerald-600 " />
-                                        <p className="text-sm font-medium text-gray-600 ">24H Current</p>
+                                        <p className="text-sm font-medium text-gray-600 ">5V Current</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Current_24Jam || 0}A</p>
-                                    <p className="text-xs text-gray-500 mt-1">Circulation Pump</p>
+                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Current_5V || 0}A</p>
+                                    <p className="text-xs text-gray-500 mt-1">5V System</p>
                                 </div>
                             </div>
                         </div>
@@ -598,21 +598,21 @@ const Dashboard = () => {
                                             <Legend />
                                             <Line 
                                                 type="monotone" 
-                                                dataKey="Current_3Pompa" 
+                                                dataKey="Current_12V" 
                                                 stroke="#F59E0B" 
                                                 strokeWidth={2}
                                                 dot={{ r: 3, fill: '#F59E0B' }}
                                                 activeDot={{ r: 5, fill: '#F59E0B' }}
-                                                name="3-Pump Current (A)"
+                                                name="12V Current (A)"
                                             />
                                             <Line 
                                                 type="monotone" 
-                                                dataKey="Current_24Jam" 
+                                                dataKey="Current_5V" 
                                                 stroke="#6366F1" 
                                                 strokeWidth={2}
                                                 dot={{ r: 3, fill: '#6366F1' }}
                                                 activeDot={{ r: 5, fill: '#6366F1' }}
-                                                name="24h Pump Current (A)"
+                                                name="5V Current (A)"
                                             />
                                         </LineChart>
                                     </ResponsiveContainer>
