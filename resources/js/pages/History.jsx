@@ -46,8 +46,8 @@ const History = () => {
 
     useEffect(() => {
         console.log('History component mounted, setting initial date range');
-        // Set default date range dari 30 Juli 2025 sampai sekarang
-        const dataStartDate = new Date('2025-07-30');
+        // Set default date range dari 2 Agustus 2025 sampai sekarang
+        const dataStartDate = new Date('2025-08-02');
         const today = new Date();
         
         setStartDate(dataStartDate.toISOString().split('T')[0]);
@@ -66,8 +66,8 @@ const History = () => {
         const end = new Date();
         const start = new Date();
         
-        // Data real mulai dari 30 Juli 2025
-        const dataStartDate = new Date('2025-07-30');
+        // Data real mulai dari 2 Agustus 2025
+        const dataStartDate = new Date('2025-08-02');
         const now = new Date();
         
         switch (range) {
@@ -94,7 +94,7 @@ const History = () => {
                 end.setTime(now.getTime());
                 break;
             case 'all':
-                // Tampilkan semua data dari 30 Juli 2025
+                // Tampilkan semua data dari 2 Agustus 2025
                 start.setTime(dataStartDate.getTime());
                 end.setTime(now.getTime());
                 break;
@@ -332,7 +332,7 @@ const History = () => {
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">Historical Data</h2>
                         <p className="text-gray-600">
-                            View sensor trends and historical analysis (Real data from July 30, 2025)
+                            View sensor trends and historical analysis
                         </p>
                     </div>
                     
@@ -504,9 +504,6 @@ const History = () => {
                     <h3 className="mt-2 text-sm font-medium text-gray-900">No historical data found</h3>
                     <p className="mt-1 text-sm text-gray-500">
                         No data available for the selected date range: {startDate} to {endDate}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                        Try selecting a different date range. Real data available from July 30, 2025.
                     </p>
                     {error && (
                         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md max-w-md mx-auto">
