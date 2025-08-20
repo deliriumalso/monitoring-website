@@ -30,7 +30,6 @@ function sendToFirestore($data, $API_KEY, $PROJECT_ID) {
     $fields = [
         "pH" => ["doubleValue" => $data['pH']],
         "TDS" => ["doubleValue" => $data['TDS']],
-        "Temperature" => ["doubleValue" => $data['Temperature']],
         "Current_12V" => ["doubleValue" => $data['Current_12V']],
         "Current_5V" => ["doubleValue" => $data['Current_5V']],
         "timestamp" => ["integerValue" => $data['timestamp']],
@@ -56,7 +55,6 @@ function sendToFirestore($data, $API_KEY, $PROJECT_ID) {
 function generateRandomData() {
     $ph = mt_rand(50, 80) / 10; // 5.0 - 8.0
     $tds = mt_rand(500, 1300); // 500 - 1300 ppm
-    $temperature = mt_rand(240, 300) / 10; // 24.0 - 30.0
     $current_12v = mt_rand(0, 200) / 100; // 0.00 - 2.00
     $current_5v = mt_rand(0, 200) / 100;  // 0.00 - 2.00
     $timestamp = time();
@@ -68,7 +66,6 @@ function generateRandomData() {
     return [
         "pH" => $ph,
         "TDS" => $tds,
-        "Temperature" => $temperature,
         "Current_12V" => $current_12v,
         "Current_5V" => $current_5v,
         "timestamp" => $timestamp,

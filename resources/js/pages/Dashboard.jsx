@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
     BeakerIcon, 
-    FireIcon, 
     BoltIcon,
     ArrowPathIcon,
     PlayIcon,
@@ -279,7 +278,7 @@ const Dashboard = () => {
 
             {realtimeData && (
                 <>
-                    {/* Sensor Cards */}
+                    {/* Main Sensor Cards - Row 1 */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* pH Card */}
                         <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
@@ -311,7 +310,7 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* 3-Pump Current Card */}
+                        {/* 12V Current Card */}
                         <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
@@ -325,23 +324,25 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* Temperature Card - Moved to the right */}
+                        {/* Last Update Card - Moved from second row */}
                         <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <FireIcon className="h-6 w-6 text-red-600 " />
-                                        <p className="text-sm font-medium text-gray-600 ">Temperature</p>
+                                        <ClockIcon className="h-6 w-6 text-gray-600 " />
+                                        <p className="text-sm font-medium text-gray-600 ">Last Update</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.Temperature || 0}°C</p>
-                                    <p className="text-xs text-gray-500 mt-1">Water Temperature</p>
+                                    <p className="text-lg lg:text-xl font-bold text-gray-900 mt-2">
+                                        {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">Real-time Data</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Secondary Metrics Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
+                    {/* Secondary Metrics Row - Row 2 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* 5V Current Card */}
                         <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex items-center justify-between">
@@ -419,22 +420,6 @@ const Dashboard = () => {
                                     </div>
                                     <p className="text-2xl lg:text-3xl font-bold text-green-600 mt-2">Online</p>
                                     <p className="text-xs text-gray-500 mt-1">All Systems Active</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Last Update Card */}
-                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <div className="flex items-center space-x-2">
-                                        <ClockIcon className="h-6 w-6 text-gray-600 " />
-                                        <p className="text-sm font-medium text-gray-600 ">Last Update</p>
-                                    </div>
-                                    <p className="text-lg lg:text-xl font-bold text-gray-900 mt-2">
-                                        {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">Real-time Data</p>
                                 </div>
                             </div>
                         </div>
@@ -540,37 +525,6 @@ const Dashboard = () => {
                                                 strokeWidth={2}
                                                 dot={{ r: 3, fill: '#8B5CF6' }}
                                                 activeDot={{ r: 5, fill: '#8B5CF6' }}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-
-                                {/* Temperature Chart */}
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                                        <FireIcon className="h-4 w-4 mr-1 text-red-600 " />
-                                        Temperature
-                                    </h4>
-                                    <ResponsiveContainer width="100%" height={200}>
-                                        <LineChart data={historicalData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'} />
-                                            <XAxis dataKey="time" fontSize={12} stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'} />
-                                            <YAxis fontSize={12} stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'} />
-                                            <Tooltip 
-                                                contentStyle={{
-                                                    backgroundColor: document.documentElement.classList.contains('dark') ? '#1F2937' : '#FFFFFF',
-                                                    border: `1px solid ${document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'}`,
-                                                    borderRadius: '8px',
-                                                    color: document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#000000'
-                                                }}
-                                            />
-                                            <Line 
-                                                type="monotone" 
-                                                dataKey="Temperature" 
-                                                stroke="#EF4444" 
-                                                strokeWidth={2}
-                                                dot={{ r: 3, fill: '#EF4444' }}
-                                                activeDot={{ r: 5, fill: '#EF4444' }}
                                             />
                                         </LineChart>
                                     </ResponsiveContainer>

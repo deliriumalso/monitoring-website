@@ -165,7 +165,7 @@ class MonitoringController extends Controller
                     'success' => false,
                     'message' => 'Invalid data structure received from Firebase',
                     'data' => $data,
-                    'debug' => 'Core fields (pH, TDS, Temperature) missing'
+                    'debug' => 'Core fields (pH, TDS) missing'
                 ], 422);
             }
             
@@ -273,13 +273,11 @@ class MonitoringController extends Controller
                 
                 // Generate realistic sensor data with some variation
                 $hour = (int) $current->format('H');
-                $baseTemp = 25 + sin(($hour / 24) * 2 * pi()) * 3; // Temperature varies by hour
                 
                 $data = [
                     'timestamp' => $timestamp,
                     'pH' => round(6.0 + (rand(-50, 50) / 100), 2), // 5.5 - 6.5 range
                     'TDS' => rand(800, 1200), // 800-1200 ppm
-                    'Temperature' => round($baseTemp + (rand(-10, 10) / 10), 1), // Temp with hour variation
                     'Current_3Pompa' => round(1.0 + (rand(0, 50) / 100), 2), // 1.0-1.5A
                     'Current_24Jam' => round(1.2 + (rand(0, 30) / 100), 2), // 1.2-1.5A
                     'Pump_PH_Plus' => rand(0, 1),
@@ -567,7 +565,7 @@ class MonitoringController extends Controller
     private function validateSensorData(array $data): bool
     {
         // Required core fields - more flexible validation
-        $coreFields = ['pH', 'TDS', 'Temperature'];
+        $coreFields = ['pH', 'TDS'];
         
         // Check if core sensor data exists
         foreach ($coreFields as $field) {
@@ -607,7 +605,6 @@ class MonitoringController extends Controller
         return [
             'pH' => (float) ($fields['pH']['doubleValue'] ?? 0),
             'TDS' => (float) ($fields['TDS']['doubleValue'] ?? 0),
-            'Temperature' => (float) ($fields['Temperature']['doubleValue'] ?? 0),
             'Current_12V' => (float) ($fields['Current_12V']['doubleValue'] ?? 0),
             'Current_5V' => (float) ($fields['Current_5V']['doubleValue'] ?? 0),
             'TDS_Target' => (float) ($fields['TDS_Target']['doubleValue'] ?? 1000),
@@ -648,16 +645,6 @@ class MonitoringController extends Controller
             $issues[] = 'TDS level suboptimal';
         }
         
-        // Temperature check (optimal: 18 - 24°C)
-        $temp = $data['Temperature'] ?? 0;
-        if ($temp < 15 || $temp > 30) {
-            $status = 'critical';
-            $issues[] = 'Temperature critical';
-        } elseif ($temp < 18 || $temp > 24) {
-            if ($status !== 'critical') $status = 'warning';
-            $issues[] = 'Temperature suboptimal';
-        }
-        
         return [
             'status' => $status,
             'issues' => $issues,
@@ -679,7 +666,6 @@ class MonitoringController extends Controller
         
         $ph = $data['pH'] ?? 0;
         $tds = $data['TDS'] ?? 0;
-        $temp = $data['Temperature'] ?? 0;
         $current12V = $data['Current_12V'] ?? 0;
         $current5V = $data['Current_5V'] ?? 0;
         
@@ -712,22 +698,6 @@ class MonitoringController extends Controller
                 'message' => 'TDS too high (> 1500 ppm)',
                 'value' => $tds,
                 'recommended_action' => 'Dilute with fresh water'
-            ];
-        }
-        
-        if ($temp < 15) {
-            $alerts[] = [
-                'type' => 'warning',
-                'message' => 'Temperature too low (< 15°C)',
-                'value' => $temp,
-                'recommended_action' => 'Check heating system'
-            ];
-        } elseif ($temp > 30) {
-            $alerts[] = [
-                'type' => 'critical',
-                'message' => 'Temperature too high (> 30°C)',
-                'value' => $temp,
-                'recommended_action' => 'Check cooling system'
             ];
         }
         

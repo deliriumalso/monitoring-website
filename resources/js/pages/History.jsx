@@ -4,7 +4,6 @@ import {
     ChartBarIcon,
     ClockIcon,
     BeakerIcon,
-    FireIcon,
     BoltIcon
 } from '@heroicons/react/24/outline';
 import {
@@ -425,20 +424,6 @@ const History = () => {
                         </div>
                     </div>
 
-                    {/* Temperature Chart */}
-                    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
-                        <div className="flex items-center mb-4">
-                            <FireIcon className="h-6 w-6 text-orange-600 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900">Temperature Trend</h3>
-                        </div>
-                        <div className="h-80">
-                            <Line
-                                data={prepareChartData(historicalData, 'Temperature', '#F59E0B')}
-                                options={chartOptions('Temperature Over Time', 'Temperature (°C)', 0, 40)}
-                            />
-                        </div>
-                    </div>
-
                     {/* Current Consumption Chart */}
                     <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
                         <div className="flex items-center mb-4">
@@ -516,42 +501,69 @@ const History = () => {
             {/* Statistics Summary */}
             {historicalData.length > 0 && (
                 <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-semibold text-gray-900">Data Summary</h3>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                             All Data
                         </span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">
+                    
+                    {/* Main Statistics */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div className="bg-blue-50 rounded-lg p-4 text-center border border-blue-100">
+                            <div className="text-3xl font-bold text-blue-600 mb-2">
                                 {(historicalData.reduce((sum, item) => sum + item.pH, 0) / historicalData.length).toFixed(1)}
                             </div>
-                            <div className="text-sm text-gray-600">Avg pH</div>
+                            <div className="text-sm font-medium text-blue-700">Average pH</div>
+                            <div className="text-xs text-blue-600 mt-1">Level</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600">
+                        
+                        <div className="bg-purple-50 rounded-lg p-4 text-center border border-purple-100">
+                            <div className="text-3xl font-bold text-purple-600 mb-2">
                                 {Math.round(historicalData.reduce((sum, item) => sum + item.TDS, 0) / historicalData.length)}
                             </div>
-                            <div className="text-sm text-gray-600">Avg TDS</div>
+                            <div className="text-sm font-medium text-purple-700">Average TDS</div>
+                            <div className="text-xs text-purple-600 mt-1">ppm</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-orange-600">
-                                {(historicalData.reduce((sum, item) => sum + item.Temperature, 0) / historicalData.length).toFixed(1)}°C
+                        
+                        <div className="bg-green-50 rounded-lg p-4 text-center border border-green-100">
+                            <div className="text-3xl font-bold text-green-600 mb-2">
+                                {(historicalData.reduce((sum, item) => sum + item.Current_12V, 0) / historicalData.length).toFixed(2)}
                             </div>
-                            <div className="text-sm text-gray-600">Avg Temp</div>
+                            <div className="text-sm font-medium text-green-700">Avg 12V Current</div>
+                            <div className="text-xs text-green-600 mt-1">Ampere</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">
-                                {(historicalData.reduce((sum, item) => sum + item.Current_12V, 0) / historicalData.length).toFixed(2)}A
+                        
+                        <div className="bg-indigo-50 rounded-lg p-4 text-center border border-indigo-100">
+                            <div className="text-3xl font-bold text-indigo-600 mb-2">
+                                {(historicalData.reduce((sum, item) => sum + item.Current_5V, 0) / historicalData.length).toFixed(2)}
                             </div>
-                            <div className="text-sm text-gray-600">Avg 12V Current</div>
+                            <div className="text-sm font-medium text-indigo-700">Avg 5V Current</div>
+                            <div className="text-xs text-indigo-600 mt-1">Ampere</div>
                         </div>
+                    </div>
+                    
+                    {/* Additional Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-indigo-600">
+                            <div className="text-xl font-bold text-gray-700">
                                 {historicalData.length}
                             </div>
                             <div className="text-sm text-gray-600">Total Records</div>
+                        </div>
+                        
+                        <div className="text-center">
+                            <div className="text-xl font-bold text-gray-700">
+                                {startDate} to {endDate}
+                            </div>
+                            <div className="text-sm text-gray-600">Date Range</div>
+                        </div>
+                        
+                        <div className="text-center">
+                            <div className="text-xl font-bold text-gray-700">
+                                {Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1)}
+                            </div>
+                            <div className="text-sm text-gray-600">Days Analyzed</div>
                         </div>
                     </div>
                 </div>
