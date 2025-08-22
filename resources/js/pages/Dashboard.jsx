@@ -12,8 +12,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
+import { useDevice } from '../contexts/DeviceContext';
 
 const Dashboard = () => {
+    const { activeDevice } = useDevice();
     const [realtimeData, setRealtimeData] = useState(null);
     const [historicalData, setHistoricalData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -43,41 +45,85 @@ const Dashboard = () => {
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [autoRefresh, refreshInterval]);
+    }, [autoRefresh, refreshInterval, activeDevice]);
+
+    // Generate dummy data for non-default devices
+    const generateDummyData = (deviceId) => {
+        const baseValues = {
+            'device-2': { pH: 6.8, TDS: 950, Current_12V: 1.3, Current_5V: 0.8 },
+            'device-3': { pH: 6.2, TDS: 1150, Current_12V: 1.1, Current_5V: 0.9 },
+            'device-4': { pH: 7.1, TDS: 880, Current_12V: 1.4, Current_5V: 0.7 },
+            'device-5': { pH: 6.6, TDS: 1020, Current_12V: 1.2, Current_5V: 0.85 }
+        };
+
+        const base = baseValues[deviceId] || { pH: 6.5, TDS: 1000, Current_12V: 1.2, Current_5V: 0.8 };
+        
+        return {
+            pH: (base.pH + (Math.random() - 0.5) * 0.4).toFixed(2),
+            TDS: Math.round(base.TDS + (Math.random() - 0.5) * 100),
+            Current_12V: (base.Current_12V + (Math.random() - 0.5) * 0.3).toFixed(3),
+            Current_5V: (base.Current_5V + (Math.random() - 0.5) * 0.2).toFixed(3),
+            TDS_Target: 1000,
+            Pump_PH_Plus: Math.random() > 0.8 ? 1 : 0,
+            Pump_PH_Minus: Math.random() > 0.9 ? 1 : 0,
+            Pump_Nutrisi: Math.random() > 0.7 ? 1 : 0,
+            Pump_24Jam: 1,
+            timestamp: Math.floor(Date.now() / 1000)
+        };
+    };
 
     const fetchRealtimeData = async () => {
         try {
-            const response = await axios.get('/api/realtime-data');
-            if (response.data.success) {
-                console.log('Realtime data received:', response.data.data);
-                setRealtimeData(response.data.data);
+            // Use real data for devices with isReal=true, dummy data for others
+            if (activeDevice?.isReal) {
+                const response = await axios.get('/api/realtime-data');
+                if (response.data.success) {
+                    console.log('Realtime data received:', response.data.data);
+                    setRealtimeData(response.data.data);
+                    setLastUpdate(new Date());
+                    setError(null);
+                } else {
+                    const errorMsg = response.data.message || 'Unknown error occurred';
+                    const debugInfo = response.data.debug ? ` (Debug: ${response.data.debug})` : '';
+                    setError(`API Error: ${errorMsg}${debugInfo}`);
+                    console.error('API returned error:', response.data);
+                }
+            } else {
+                // Generate dummy data for other devices
+                const dummyData = generateDummyData(activeDevice?.id || 'device-dummy');
+                setRealtimeData(dummyData);
                 setLastUpdate(new Date());
                 setError(null);
-            } else {
-                const errorMsg = response.data.message || 'Unknown error occurred';
-                const debugInfo = response.data.debug ? ` (Debug: ${response.data.debug})` : '';
-                setError(`API Error: ${errorMsg}${debugInfo}`);
-                console.error('API returned error:', response.data);
+                console.log(`Dummy data generated for ${activeDevice?.name || 'Unknown Device'}:`, dummyData);
             }
         } catch (err) {
-            let errorMessage = 'Failed to fetch realtime data';
-            
-            if (err.response) {
-                // Server responded with error status
-                errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
-                if (err.response.data?.debug) {
-                    errorMessage += ` - ${err.response.data.debug}`;
+            // Only show error for real devices, for dummy devices just use fallback
+            if (activeDevice?.isReal) {
+                let errorMessage = 'Failed to fetch realtime data';
+                
+                if (err.response) {
+                    // Server responded with error status
+                    errorMessage = `Server Error (${err.response.status}): ${err.response.data?.message || err.response.statusText}`;
+                    if (err.response.data?.debug) {
+                        errorMessage += ` - ${err.response.data.debug}`;
+                    }
+                } else if (err.request) {
+                    // Request made but no response received
+                    errorMessage = 'No response from server. Please check if Laravel server is running.';
+                } else {
+                    // Something else happened
+                    errorMessage = `Request failed: ${err.message}`;
                 }
-            } else if (err.request) {
-                // Request made but no response received
-                errorMessage = 'No response from server. Please check if Laravel server is running.';
+                
+                setError(errorMessage);
+                console.error('Error fetching realtime data:', err);
             } else {
-                // Something else happened
-                errorMessage = `Request failed: ${err.message}`;
+                // For dummy devices, fallback to dummy data even if there's an error
+                const dummyData = generateDummyData(activeDevice?.id || 'device-dummy');
+                setRealtimeData(dummyData);
+                setLastUpdate(new Date());
+                setError(null);
             }
-            
-            setError(errorMessage);
-            console.error('Error fetching realtime data:', err);
         } finally {
             setLoading(false);
         }
@@ -85,22 +131,63 @@ const Dashboard = () => {
 
     const fetchRecentHistory = async () => {
         try {
-            const response = await axios.get('/api/historical-data', {
-                params: {
-                    limit: 20
-                }
-            });
-            
-            if (response.data.success && response.data.data) {
-                const formattedData = response.data.data.map(item => ({
-                    ...item,
-                    time: new Date(item.timestamp).toLocaleTimeString()
-                })).reverse(); // Reverse to show chronological order
+            if (activeDevice?.isReal) {
+                // Use real historical data for real devices
+                const response = await axios.get('/api/historical-data', {
+                    params: {
+                        limit: 20
+                    }
+                });
                 
-                setHistoricalData(formattedData);
+                if (response.data.success && response.data.data) {
+                    const formattedData = response.data.data.map(item => ({
+                        ...item,
+                        time: new Date(item.timestamp).toLocaleTimeString()
+                    })).reverse(); // Reverse to show chronological order
+                    
+                    setHistoricalData(formattedData);
+                }
+            } else {
+                // Generate dummy historical data for dummy devices
+                const dummyHistoricalData = [];
+                const now = new Date();
+                
+                for (let i = 19; i >= 0; i--) {
+                    const timestamp = new Date(now.getTime() - (i * 5 * 60 * 1000)); // 5 minutes intervals
+                    const dummyPoint = generateDummyData(activeDevice?.id || 'device-dummy');
+                    
+                    dummyHistoricalData.push({
+                        ...dummyPoint,
+                        timestamp: Math.floor(timestamp.getTime() / 1000),
+                        time: timestamp.toLocaleTimeString(),
+                        created_at: timestamp.toISOString()
+                    });
+                }
+                
+                setHistoricalData(dummyHistoricalData);
             }
         } catch (err) {
-            console.error('Error fetching historical data:', err);
+            if (activeDevice?.isReal) {
+                console.error('Error fetching historical data:', err);
+            } else {
+                // For dummy devices, still generate dummy data even if API fails
+                const dummyHistoricalData = [];
+                const now = new Date();
+                
+                for (let i = 19; i >= 0; i--) {
+                    const timestamp = new Date(now.getTime() - (i * 5 * 60 * 1000));
+                    const dummyPoint = generateDummyData(activeDevice?.id || 'device-dummy');
+                    
+                    dummyHistoricalData.push({
+                        ...dummyPoint,
+                        timestamp: Math.floor(timestamp.getTime() / 1000),
+                        time: timestamp.toLocaleTimeString(),
+                        created_at: timestamp.toISOString()
+                    });
+                }
+                
+                setHistoricalData(dummyHistoricalData);
+            }
         }
     };
 

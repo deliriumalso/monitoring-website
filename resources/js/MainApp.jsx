@@ -6,6 +6,7 @@ import History from './pages/History.jsx';
 import Settings from './pages/Settings.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import { DeviceProvider } from './contexts/DeviceContext';
 import axios from 'axios';
 
 function MainApp() {
@@ -77,17 +78,19 @@ function MainApp() {
 
     // If user is authenticated, show main application
     return (
-        <Layout user={user} onLogout={handleLogout}>
-            <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/register" element={<Navigate to="/dashboard" replace />} />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-        </Layout>
+        <DeviceProvider>
+            <Layout user={user} onLogout={handleLogout}>
+                <Routes>
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/history" element={<History />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+            </Layout>
+        </DeviceProvider>
     );
 }
 

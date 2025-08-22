@@ -12,6 +12,8 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import DeviceSelector from './DeviceSelector';
+import { useDevice } from '../contexts/DeviceContext';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
@@ -30,6 +32,7 @@ export default function Layout({ children, user, onLogout }) {
     });
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const location = useLocation();
+    const { activeDevice } = useDevice();
 
     // Save sidebar state to localStorage
     useEffect(() => {
@@ -105,6 +108,9 @@ export default function Layout({ children, user, onLogout }) {
                         })}
                     </ul>
                 </nav>
+
+                {/* Mobile Device Selector */}
+                <DeviceSelector sidebarExpanded={true} />
             </div>
 
             {/* Desktop sidebar */}
@@ -178,6 +184,9 @@ export default function Layout({ children, user, onLogout }) {
                         })}
                     </ul>
                 </nav>
+
+                {/* Device Selector */}
+                <DeviceSelector sidebarExpanded={sidebarExpanded} />
 
                 {/* Sidebar footer - User info */}
                 <div className="border-t border-gray-200 p-3">

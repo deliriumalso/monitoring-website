@@ -21,6 +21,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
 import axios from 'axios';
+import { useDevice } from '../contexts/DeviceContext';
 
 // Register Chart.js components
 ChartJS.register(
@@ -36,6 +37,7 @@ ChartJS.register(
 );
 
 const History = () => {
+    const { activeDevice } = useDevice();
     const [historicalData, setHistoricalData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -124,54 +126,110 @@ const History = () => {
         setSelectedTimeRange(range);
     };
 
+    // Generate dummy data for non-default devices
+    const generateDummyData = (deviceId, timestamp) => {
+        const baseValues = {
+            'device-2': { pH: 6.8, TDS: 950, Current_12V: 1.3, Current_5V: 0.8 },
+            'device-3': { pH: 6.2, TDS: 1150, Current_12V: 1.1, Current_5V: 0.9 },
+            'device-4': { pH: 7.1, TDS: 880, Current_12V: 1.4, Current_5V: 0.7 },
+            'device-5': { pH: 6.6, TDS: 1020, Current_12V: 1.2, Current_5V: 0.85 }
+        };
+
+        const base = baseValues[deviceId] || { pH: 6.5, TDS: 1000, Current_12V: 1.2, Current_5V: 0.8 };
+        
+        return {
+            pH: parseFloat((base.pH + (Math.random() - 0.5) * 0.4).toFixed(2)),
+            TDS: Math.round(base.TDS + (Math.random() - 0.5) * 100),
+            Current_12V: parseFloat((base.Current_12V + (Math.random() - 0.5) * 0.3).toFixed(3)),
+            Current_5V: parseFloat((base.Current_5V + (Math.random() - 0.5) * 0.2).toFixed(3)),
+            timestamp: timestamp,
+            created_at: new Date(timestamp * 1000).toISOString()
+        };
+    };
+
     const fetchHistoricalData = async () => {
         try {
             setLoading(true);
             setError(null);
             
-            console.log('Fetching historical data with params:', { start_date: startDate, end_date: endDate });
-            
-            const response = await axios.get('/api/historical-data/date-range', {
-                params: {
-                    start_date: startDate,
-                    end_date: endDate
-                }
-            });
-
-            console.log('Historical data response:', response.data);
-
-            if (response.data.success) {
-                console.log('Raw data from API:', response.data.data);
+            if (activeDevice?.isReal) {
+                // Use real historical data for real devices
+                console.log('Fetching historical data with params:', { start_date: startDate, end_date: endDate });
                 
-                // Debug: Check each item's timestamp and hour
-                response.data.data.forEach((item, index) => {
-                    const date = new Date(item.timestamp * 1000);
-                    const jakartaTime = date.toLocaleString("en-US", {timeZone: "Asia/Jakarta"});
-                    const jakartaDate = new Date(jakartaTime);
-                    const hour = jakartaDate.getHours();
-                    console.log(`Item ${index}:`, {
-                        timestamp: item.timestamp,
-                        date: date.toISOString(),
-                        jakartaTime: jakartaTime,
-                        hour: hour,
-                        willBeIncluded: hour >= 8 && hour <= 17
-                    });
+                const response = await axios.get('/api/historical-data/date-range', {
+                    params: {
+                        start_date: startDate,
+                        end_date: endDate
+                    }
                 });
-                
-                // No filtering needed - show all data
-                let filteredData = response.data.data;
-                
-                setHistoricalData(filteredData);
-                console.log('Historical data set:', filteredData);
-                console.log('Data count:', filteredData.length);
+
+                console.log('Historical data response:', response.data);
+
+                if (response.data.success) {
+                    console.log('Raw data from API:', response.data.data);
+                    
+                    // Debug: Check each item's timestamp and hour
+                    response.data.data.forEach((item, index) => {
+                        const date = new Date(item.timestamp * 1000);
+                        const jakartaTime = date.toLocaleString("en-US", {timeZone: "Asia/Jakarta"});
+                        const jakartaDate = new Date(jakartaTime);
+                        const hour = jakartaDate.getHours();
+                        console.log(`Item ${index}:`, {
+                            timestamp: item.timestamp,
+                            date: date.toISOString(),
+                            jakartaTime: jakartaTime,
+                            hour: hour,
+                            willBeIncluded: hour >= 8 && hour <= 17
+                        });
+                    });
+                    
+                    // No filtering needed - show all data
+                    let filteredData = response.data.data;
+                    
+                    setHistoricalData(filteredData);
+                    console.log('Historical data set:', filteredData);
+                    console.log('Data count:', filteredData.length);
+                } else {
+                    setError(response.data.message || 'Failed to fetch historical data');
+                    console.error('API returned error:', response.data.message);
+                }
             } else {
-                setError(response.data.message || 'Failed to fetch historical data');
-                console.error('API returned error:', response.data.message);
+                // Generate dummy historical data for dummy devices
+                const dummyHistoricalData = [];
+                const startTimestamp = new Date(startDate).getTime() / 1000;
+                const endTimestamp = new Date(endDate + 'T23:59:59').getTime() / 1000;
+                const intervalMinutes = 30; // 30 minutes intervals
+                const intervalSeconds = intervalMinutes * 60;
+                
+                // Generate data points from start to end date
+                for (let timestamp = startTimestamp; timestamp <= endTimestamp; timestamp += intervalSeconds) {
+                    const dummyPoint = generateDummyData(activeDevice?.id || 'device-dummy', timestamp);
+                    dummyHistoricalData.push(dummyPoint);
+                }
+                
+                console.log(`Generated ${dummyHistoricalData.length} dummy data points for ${activeDevice?.name || 'Unknown Device'}`);
+                setHistoricalData(dummyHistoricalData);
             }
         } catch (err) {
-            setError('Failed to fetch historical data');
-            console.error('Error fetching historical data:', err);
-            console.error('Error details:', err.response?.data);
+            if (activeDevice?.isReal) {
+                setError('Failed to fetch historical data');
+                console.error('Error fetching historical data:', err);
+                console.error('Error details:', err.response?.data);
+            } else {
+                // For dummy devices, still generate dummy data even if API fails
+                const dummyHistoricalData = [];
+                const startTimestamp = new Date(startDate).getTime() / 1000;
+                const endTimestamp = new Date(endDate + 'T23:59:59').getTime() / 1000;
+                const intervalSeconds = 30 * 60; // 30 minutes
+                
+                for (let timestamp = startTimestamp; timestamp <= endTimestamp; timestamp += intervalSeconds) {
+                    const dummyPoint = generateDummyData(activeDevice?.id || 'device-dummy', timestamp);
+                    dummyHistoricalData.push(dummyPoint);
+                }
+                
+                setHistoricalData(dummyHistoricalData);
+                console.log(`Generated dummy data for ${activeDevice} (API failed)`);
+            }
         } finally {
             setLoading(false);
         }
