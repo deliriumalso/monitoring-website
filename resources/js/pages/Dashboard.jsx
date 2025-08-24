@@ -47,35 +47,76 @@ const Dashboard = () => {
         };
     }, [autoRefresh, refreshInterval, activeDevice]);
 
-    // Generate dummy data for non-default devices
+    // Generate realistic dummy data for non-real devices
     const generateDummyData = (deviceId) => {
         const baseValues = {
-            'device-2': { pH: 6.8, TDS: 950, Current_12V: 1.3, Current_5V: 0.8 },
-            'device-3': { pH: 6.2, TDS: 1150, Current_12V: 1.1, Current_5V: 0.9 },
-            'device-4': { pH: 7.1, TDS: 880, Current_12V: 1.4, Current_5V: 0.7 },
-            'device-5': { pH: 6.6, TDS: 1020, Current_12V: 1.2, Current_5V: 0.85 }
+            'device-2': { 
+                pH: 6.8, 
+                TDS: 950, 
+                Current_12V: 1.3, 
+                Current_5V: 0.8,
+                TDS_Target: 900,
+                location: 'Greenhouse A'
+            },
+            'device-3': { 
+                pH: 6.2, 
+                TDS: 1150, 
+                Current_12V: 1.1, 
+                Current_5V: 0.9,
+                TDS_Target: 1100,
+                location: 'Greenhouse B'
+            },
+            'device-4': { 
+                pH: 7.1, 
+                TDS: 880, 
+                Current_12V: 1.4, 
+                Current_5V: 0.7,
+                TDS_Target: 850,
+                location: 'Greenhouse C'
+            },
+            'device-5': { 
+                pH: 6.6, 
+                TDS: 1020, 
+                Current_12V: 1.2, 
+                Current_5V: 0.85,
+                TDS_Target: 1000,
+                location: 'Greenhouse D'
+            }
         };
 
-        const base = baseValues[deviceId] || { pH: 6.5, TDS: 1000, Current_12V: 1.2, Current_5V: 0.8 };
-        
-        return {
-            pH: (base.pH + (Math.random() - 0.5) * 0.4).toFixed(2),
-            TDS: Math.round(base.TDS + (Math.random() - 0.5) * 100),
-            Current_12V: (base.Current_12V + (Math.random() - 0.5) * 0.3).toFixed(3),
-            Current_5V: (base.Current_5V + (Math.random() - 0.5) * 0.2).toFixed(3),
+        const base = baseValues[deviceId] || { 
+            pH: 6.5, 
+            TDS: 1000, 
+            Current_12V: 1.2, 
+            Current_5V: 0.8,
             TDS_Target: 1000,
+            location: 'Unknown Location'
+        };
+        
+        // Add realistic variations to the base values
+        return {
+            pH: parseFloat((base.pH + (Math.random() - 0.5) * 0.4).toFixed(2)),
+            TDS: Math.round(base.TDS + (Math.random() - 0.5) * 100),
+            Current_12V: parseFloat((base.Current_12V + (Math.random() - 0.5) * 0.3).toFixed(3)),
+            Current_5V: parseFloat((base.Current_5V + (Math.random() - 0.5) * 0.2).toFixed(3)),
+            TDS_Target: base.TDS_Target,
             Pump_PH_Plus: Math.random() > 0.8 ? 1 : 0,
             Pump_PH_Minus: Math.random() > 0.9 ? 1 : 0,
             Pump_Nutrisi: Math.random() > 0.7 ? 1 : 0,
-            Pump_24Jam: 1,
-            timestamp: Math.floor(Date.now() / 1000)
+            Pump_24Jam: 1, // Always on for circulation
+            timestamp: Math.floor(Date.now() / 1000),
+            // Additional metadata for dummy devices
+            device_location: base.location,
+            data_source: 'dummy'
         };
     };
 
     const fetchRealtimeData = async () => {
         try {
-            // Use real data for devices with isReal=true, dummy data for others
+            // Only fetch real data for the default device (device-1 with isReal=true)
+            // All other devices use dummy data only
             if (activeDevice?.isReal) {
+                console.log('Fetching real data from Firebase for:', activeDevice.name);
                 const response = await axios.get('/api/realtime-data');
                 if (response.data.success) {
                     console.log('Realtime data received:', response.data.data);
@@ -89,15 +130,15 @@ const Dashboard = () => {
                     console.error('API returned error:', response.data);
                 }
             } else {
-                // Generate dummy data for other devices
+                // Generate dummy data for all non-real devices (device-2, device-3, etc.)
                 const dummyData = generateDummyData(activeDevice?.id || 'device-dummy');
                 setRealtimeData(dummyData);
                 setLastUpdate(new Date());
                 setError(null);
-                console.log(`Dummy data generated for ${activeDevice?.name || 'Unknown Device'}:`, dummyData);
+                console.log(`Using dummy data for ${activeDevice?.name || 'Unknown Device'}:`, dummyData);
             }
         } catch (err) {
-            // Only show error for real devices, for dummy devices just use fallback
+            // Only show error for real devices (device-1)
             if (activeDevice?.isReal) {
                 let errorMessage = 'Failed to fetch realtime data';
                 
@@ -118,11 +159,12 @@ const Dashboard = () => {
                 setError(errorMessage);
                 console.error('Error fetching realtime data:', err);
             } else {
-                // For dummy devices, fallback to dummy data even if there's an error
+                // For dummy devices, always use dummy data - no errors shown
                 const dummyData = generateDummyData(activeDevice?.id || 'device-dummy');
                 setRealtimeData(dummyData);
                 setLastUpdate(new Date());
                 setError(null);
+                console.log(`Fallback to dummy data for ${activeDevice?.name || 'Unknown Device'}`);
             }
         } finally {
             setLoading(false);
@@ -131,8 +173,10 @@ const Dashboard = () => {
 
     const fetchRecentHistory = async () => {
         try {
+            // Only fetch real historical data for the default device (device-1 with isReal=true)
+            // All other devices use dummy historical data only
             if (activeDevice?.isReal) {
-                // Use real historical data for real devices
+                console.log('Fetching real historical data for:', activeDevice.name);
                 const response = await axios.get('/api/historical-data', {
                     params: {
                         limit: 20
@@ -142,13 +186,17 @@ const Dashboard = () => {
                 if (response.data.success && response.data.data) {
                     const formattedData = response.data.data.map(item => ({
                         ...item,
-                        time: new Date(item.timestamp).toLocaleTimeString()
+                        time: new Date(item.timestamp * 1000).toLocaleTimeString()
                     })).reverse(); // Reverse to show chronological order
                     
                     setHistoricalData(formattedData);
+                    console.log('Real historical data loaded:', formattedData.length, 'points');
+                } else {
+                    console.warn('No real historical data available');
+                    setHistoricalData([]);
                 }
             } else {
-                // Generate dummy historical data for dummy devices
+                // Generate dummy historical data for all non-real devices
                 const dummyHistoricalData = [];
                 const now = new Date();
                 
@@ -165,12 +213,16 @@ const Dashboard = () => {
                 }
                 
                 setHistoricalData(dummyHistoricalData);
+                console.log(`Generated dummy historical data for ${activeDevice?.name || 'Unknown Device'}:`, dummyHistoricalData.length, 'points');
             }
         } catch (err) {
+            // Only log errors for real devices (device-1)
             if (activeDevice?.isReal) {
-                console.error('Error fetching historical data:', err);
+                console.error('Error fetching real historical data:', err);
+                // Still set empty data for real device if there's an error
+                setHistoricalData([]);
             } else {
-                // For dummy devices, still generate dummy data even if API fails
+                // For dummy devices, always generate dummy data - no API calls, no errors
                 const dummyHistoricalData = [];
                 const now = new Date();
                 
@@ -187,6 +239,7 @@ const Dashboard = () => {
                 }
                 
                 setHistoricalData(dummyHistoricalData);
+                console.log(`Fallback dummy historical data for ${activeDevice?.name || 'Unknown Device'}`);
             }
         }
     };
@@ -208,6 +261,12 @@ const Dashboard = () => {
     };
 
     const updateTdsTarget = async () => {
+        // Only allow TDS Target update for real devices
+        if (!activeDevice?.isReal) {
+            alert('TDS Target can only be updated for real devices (device-1).\n\nThis is a dummy device for demonstration purposes only.');
+            return;
+        }
+
         if (!newTdsTarget || newTdsTarget < 100 || newTdsTarget > 3000) {
             alert('Please enter a valid TDS Target value between 100 and 3000 ppm');
             return;
@@ -215,15 +274,29 @@ const Dashboard = () => {
 
         try {
             setUpdating(true);
+            console.log('Updating TDS Target to:', newTdsTarget);
+            console.log('Active Device:', activeDevice);
+            console.log('Current TDS Target:', realtimeData?.TDS_Target);
+            
             const response = await axios.post('/api/update-tds-target', {
                 tds_target: parseFloat(newTdsTarget)
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
             });
 
+            console.log('Update TDS Target response:', response.data);
+            console.log('Response status:', response.status);
+
             if (response.data.success) {
-                alert(`TDS Target updated successfully to ${newTdsTarget} ppm`);
+                console.log('TDS Target update success, new value:', response.data.new_value);
+                alert(`TDS Target updated successfully to ${newTdsTarget} ppm.\n\nThe Arduino device will receive this update immediately.\n\nNote: If the value reverts back, check the Arduino serial monitor for any override messages.`);
                 setTdsTargetEdit(false);
                 setNewTdsTarget('');
-                // Refresh data to show updated target
+                // Immediately refresh data to show updated target
+                console.log('Immediately refreshing data...');
                 fetchRealtimeData();
             } else {
                 alert(`Failed to update TDS Target: ${response.data.message}`);
@@ -237,6 +310,10 @@ const Dashboard = () => {
     };
 
     const handleTdsTargetEdit = () => {
+        if (!activeDevice?.isReal) {
+            alert('TDS Target can only be edited for real devices (device-1).\n\nThis is a dummy device for demonstration purposes only.\nThe TDS Target shown is simulated data.');
+            return;
+        }
         setNewTdsTarget(realtimeData?.TDS_Target || 1000);
         setTdsTargetEdit(true);
     };
@@ -485,8 +562,16 @@ const Dashboard = () => {
                                             <p className="text-2xl lg:text-3xl font-bold text-gray-900 ">{realtimeData.TDS_Target || 1000}</p>
                                             <button
                                                 onClick={handleTdsTargetEdit}
-                                                className="text-gray-400 hover:text-gray-600 "
-                                                title="Edit TDS Target"
+                                                className={`${
+                                                    activeDevice?.isReal 
+                                                        ? 'text-gray-400 hover:text-gray-600' 
+                                                        : 'text-gray-300 cursor-not-allowed'
+                                                }`}
+                                                title={
+                                                    activeDevice?.isReal 
+                                                        ? "Edit TDS Target" 
+                                                        : "TDS Target cannot be edited for dummy devices"
+                                                }
                                             >
                                                 <Cog6ToothIcon className="h-4 w-4" />
                                             </button>

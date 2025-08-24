@@ -127,23 +127,68 @@ const History = () => {
     };
 
     // Generate dummy data for non-default devices
+    // Generate realistic dummy historical data for non-real devices
     const generateDummyData = (deviceId, timestamp) => {
         const baseValues = {
-            'device-2': { pH: 6.8, TDS: 950, Current_12V: 1.3, Current_5V: 0.8 },
-            'device-3': { pH: 6.2, TDS: 1150, Current_12V: 1.1, Current_5V: 0.9 },
-            'device-4': { pH: 7.1, TDS: 880, Current_12V: 1.4, Current_5V: 0.7 },
-            'device-5': { pH: 6.6, TDS: 1020, Current_12V: 1.2, Current_5V: 0.85 }
+            'device-2': { 
+                pH: 6.8, 
+                TDS: 950, 
+                Current_12V: 1.3, 
+                Current_5V: 0.8,
+                TDS_Target: 900,
+                location: 'Greenhouse A'
+            },
+            'device-3': { 
+                pH: 6.2, 
+                TDS: 1150, 
+                Current_12V: 1.1, 
+                Current_5V: 0.9,
+                TDS_Target: 1100,
+                location: 'Greenhouse B'
+            },
+            'device-4': { 
+                pH: 7.1, 
+                TDS: 880, 
+                Current_12V: 1.4, 
+                Current_5V: 0.7,
+                TDS_Target: 850,
+                location: 'Greenhouse C'
+            },
+            'device-5': { 
+                pH: 6.6, 
+                TDS: 1020, 
+                Current_12V: 1.2, 
+                Current_5V: 0.85,
+                TDS_Target: 1000,
+                location: 'Greenhouse D'
+            }
         };
 
-        const base = baseValues[deviceId] || { pH: 6.5, TDS: 1000, Current_12V: 1.2, Current_5V: 0.8 };
+        const base = baseValues[deviceId] || { 
+            pH: 6.5, 
+            TDS: 1000, 
+            Current_12V: 1.2, 
+            Current_5V: 0.8,
+            TDS_Target: 1000,
+            location: 'Unknown Location'
+        };
         
+        // Add realistic variations to historical data
         return {
             pH: parseFloat((base.pH + (Math.random() - 0.5) * 0.4).toFixed(2)),
             TDS: Math.round(base.TDS + (Math.random() - 0.5) * 100),
             Current_12V: parseFloat((base.Current_12V + (Math.random() - 0.5) * 0.3).toFixed(3)),
             Current_5V: parseFloat((base.Current_5V + (Math.random() - 0.5) * 0.2).toFixed(3)),
+            TDS_Target: base.TDS_Target,
+            Pump_PH_Plus: Math.random() > 0.8 ? 1 : 0,
+            Pump_PH_Minus: Math.random() > 0.9 ? 1 : 0,
+            Pump_Nutrisi: Math.random() > 0.7 ? 1 : 0,
+            Pump_24Jam: 1, // Always on for circulation
             timestamp: timestamp,
-            created_at: new Date(timestamp * 1000).toISOString()
+            created_at: new Date(timestamp * 1000).toISOString(),
+            // Additional metadata for dummy devices
+            device_location: base.location,
+            data_source: 'dummy_historical'
         };
     };
 
@@ -152,9 +197,11 @@ const History = () => {
             setLoading(true);
             setError(null);
             
+            // Only fetch real historical data for the default device (device-1 with isReal=true)
+            // All other devices use dummy historical data only
             if (activeDevice?.isReal) {
-                // Use real historical data for real devices
-                console.log('Fetching historical data with params:', { start_date: startDate, end_date: endDate });
+                console.log('Fetching real historical data for:', activeDevice.name);
+                console.log('Date range:', { start_date: startDate, end_date: endDate });
                 
                 const response = await axios.get('/api/historical-data/date-range', {
                     params: {
@@ -166,35 +213,21 @@ const History = () => {
                 console.log('Historical data response:', response.data);
 
                 if (response.data.success) {
-                    console.log('Raw data from API:', response.data.data);
+                    console.log('Real historical data loaded:', response.data.data.length, 'points');
                     
-                    // Debug: Check each item's timestamp and hour
-                    response.data.data.forEach((item, index) => {
-                        const date = new Date(item.timestamp * 1000);
-                        const jakartaTime = date.toLocaleString("en-US", {timeZone: "Asia/Jakarta"});
-                        const jakartaDate = new Date(jakartaTime);
-                        const hour = jakartaDate.getHours();
-                        console.log(`Item ${index}:`, {
-                            timestamp: item.timestamp,
-                            date: date.toISOString(),
-                            jakartaTime: jakartaTime,
-                            hour: hour,
-                            willBeIncluded: hour >= 8 && hour <= 17
-                        });
-                    });
-                    
-                    // No filtering needed - show all data
+                    // Use real data without filtering for working hours
                     let filteredData = response.data.data;
                     
                     setHistoricalData(filteredData);
-                    console.log('Historical data set:', filteredData);
-                    console.log('Data count:', filteredData.length);
+                    console.log('Real historical data set with', filteredData.length, 'points');
                 } else {
-                    setError(response.data.message || 'Failed to fetch historical data');
+                    setError(response.data.message || 'Failed to fetch real historical data');
                     console.error('API returned error:', response.data.message);
                 }
             } else {
-                // Generate dummy historical data for dummy devices
+                // Generate dummy historical data for all non-real devices
+                console.log('Generating dummy historical data for:', activeDevice?.name || 'Unknown Device');
+                
                 const dummyHistoricalData = [];
                 const startTimestamp = new Date(startDate).getTime() / 1000;
                 const endTimestamp = new Date(endDate + 'T23:59:59').getTime() / 1000;
@@ -207,20 +240,24 @@ const History = () => {
                     dummyHistoricalData.push(dummyPoint);
                 }
                 
-                console.log(`Generated ${dummyHistoricalData.length} dummy data points for ${activeDevice?.name || 'Unknown Device'}`);
+                console.log(`Generated ${dummyHistoricalData.length} dummy historical points for ${activeDevice?.name || 'Unknown Device'}`);
                 setHistoricalData(dummyHistoricalData);
             }
         } catch (err) {
+            // Only log errors for real devices (device-1)
             if (activeDevice?.isReal) {
-                setError('Failed to fetch historical data');
-                console.error('Error fetching historical data:', err);
+                setError('Failed to fetch real historical data');
+                console.error('Error fetching real historical data:', err);
                 console.error('Error details:', err.response?.data);
             } else {
-                // For dummy devices, still generate dummy data even if API fails
+                // For dummy devices, always generate dummy data - no API calls, no errors
+                console.log('Generating fallback dummy historical data for:', activeDevice?.name || 'Unknown Device');
+                
                 const dummyHistoricalData = [];
                 const startTimestamp = new Date(startDate).getTime() / 1000;
                 const endTimestamp = new Date(endDate + 'T23:59:59').getTime() / 1000;
-                const intervalSeconds = 30 * 60; // 30 minutes
+                const intervalMinutes = 30;
+                const intervalSeconds = intervalMinutes * 60;
                 
                 for (let timestamp = startTimestamp; timestamp <= endTimestamp; timestamp += intervalSeconds) {
                     const dummyPoint = generateDummyData(activeDevice?.id || 'device-dummy', timestamp);
@@ -228,7 +265,7 @@ const History = () => {
                 }
                 
                 setHistoricalData(dummyHistoricalData);
-                console.log(`Generated dummy data for ${activeDevice} (API failed)`);
+                console.log(`Fallback: Generated ${dummyHistoricalData.length} dummy historical points`);
             }
         } finally {
             setLoading(false);

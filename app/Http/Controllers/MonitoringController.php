@@ -198,53 +198,100 @@ class MonitoringController extends Controller
     {
         try {
             $limit = $request->input('limit', 100);
-            $orderBy = $request->input('orderBy', 'timestamp');
-            $orderDirection = $request->input('orderDirection', 'DESCENDING');
             
-            $url = "https://firestore.googleapis.com/v1/projects/{$this->projectId}/databases/(default)/documents/history";
+            // Use Firebase Realtime Database instead of Firestore
+            // Get historical data from /History node without complex ordering to avoid index requirement
+            $url = $this->databaseUrl . "/History.json";
             
-            $queryParams = [
-                'key' => $this->apiKey,
-                'pageSize' => min($limit, 1000), // Max 1000 per request
-                'orderBy' => $orderBy . ' ' . $orderDirection
-            ];
-            
-            if ($request->has('pageToken')) {
-                $queryParams['pageToken'] = $request->input('pageToken');
+            $queryParams = [];
+            if ($this->apiKey) {
+                $queryParams['auth'] = $this->apiKey;
             }
+            
+            // Use simple query without ordering to avoid index requirement
+            // We'll sort in PHP instead
+            
+            Log::info('Fetching historical data from RTDB', [
+                'url' => $url,
+                'params' => $queryParams
+            ]);
             
             $response = Http::timeout(30)->get($url, $queryParams);
             
+            Log::info('Historical data RTDB response', [
+                'status' => $response->status(),
+                'has_data' => !empty($response->body()),
+                'body_preview' => substr($response->body(), 0, 200)
+            ]);
+            
             if ($response->successful()) {
                 $data = $response->json();
-                $documents = $data['documents'] ?? [];
                 
-                $formattedData = collect($documents)->map(function ($doc) {
-                    return $this->formatFirestoreDocument($doc);
-                })->filter()->values();
-                
-                return response()->json([
-                    'success' => true,
-                    'data' => $formattedData,
-                    'nextPageToken' => $data['nextPageToken'] ?? null,
-                    'total' => count($formattedData)
-                ]);
+                if (is_array($data) && !empty($data)) {
+                    // Convert associative array to indexed array with proper structure
+                    $formattedData = collect($data)->map(function ($item, $key) {
+                        if (is_array($item)) {
+                            return [
+                                'id' => $key,
+                                'pH' => $item['pH'] ?? null,
+                                'TDS' => $item['TDS'] ?? null,
+                                'Current_12V' => $item['Current_12V'] ?? null,
+                                'Current_5V' => $item['Current_5V'] ?? null,
+                                'TDS_Target' => $item['TDS_Target'] ?? null,
+                                'Pump_PH_Plus' => $item['Pump_PH_Plus'] ?? 0,
+                                'Pump_PH_Minus' => $item['Pump_PH_Minus'] ?? 0,
+                                'Pump_Nutrisi' => $item['Pump_Nutrisi'] ?? 0,
+                                'Pump_24Jam' => $item['Pump_24Jam'] ?? 1,
+                                'timestamp' => $item['timestamp'] ?? time(),
+                                'created_at' => isset($item['timestamp']) ? 
+                                    date('Y-m-d H:i:s', $item['timestamp']) : 
+                                    now()->toDateTimeString()
+                            ];
+                        }
+                        return null;
+                    })->filter()->sortByDesc('timestamp')->take($limit)->values(); // Sort by timestamp descending and limit
+                    
+                    return response()->json([
+                        'success' => true,
+                        'data' => $formattedData,
+                        'total' => count($formattedData)
+                    ]);
+                } elseif ($data === null || empty($data)) {
+                    // No historical data found, return empty array with success
+                    return response()->json([
+                        'success' => true,
+                        'data' => [],
+                        'total' => 0,
+                        'message' => 'No historical data found'
+                    ]);
+                }
             }
             
+            Log::error('Failed to fetch historical data from RTDB', [
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            
+            // Return success with empty data instead of error to prevent breaking the UI
             return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch historical data from Firestore',
-                'data' => []
-            ], $response->status());
+                'success' => true,
+                'data' => [],
+                'total' => 0,
+                'message' => 'Historical data temporarily unavailable',
+                'debug' => 'HTTP ' . $response->status() . ': ' . $response->body()
+            ]);
             
         } catch (\Exception $e) {
-            Log::error('Firestore fetch error: ' . $e->getMessage());
+            Log::error('Historical data fetch error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
+            // Return success with empty data instead of error to prevent breaking the UI
             return response()->json([
-                'success' => false,
-                'message' => 'Internal server error',
-                'data' => []
-            ], 500);
+                'success' => true,
+                'data' => [],
+                'total' => 0,
+                'message' => 'Historical data temporarily unavailable: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -454,45 +501,71 @@ class MonitoringController extends Controller
         ]);
 
         try {
-            $tdsTarget = $request->input('tds_target');
+            $tdsTarget = (int) $request->input('tds_target');
             
             // Check if Firebase config exists
             if (!$this->apiKey || !$this->databaseUrl) {
+                Log::error('Firebase configuration missing', [
+                    'api_key_exists' => !empty($this->apiKey),
+                    'database_url_exists' => !empty($this->databaseUrl)
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Firebase configuration not found'
                 ], 500);
             }
             
-            $url = $this->databaseUrl . "/Sensor/TDS_Target.json?auth=" . $this->apiKey;
+            // Use Firebase REST API without auth parameter for public databases
+            $url = $this->databaseUrl . "/Sensor/TDS_Target.json";
             
-            $response = Http::timeout(30)->put($url, $tdsTarget);
+            Log::info('Attempting to update TDS Target', [
+                'url' => $url,
+                'new_value' => $tdsTarget,
+                'method' => 'PUT'
+            ]);
+            
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json'
+                ])
+                ->put($url, (string) $tdsTarget);
+            
+            Log::info('Firebase PUT response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'headers' => $response->headers()
+            ]);
             
             if ($response->successful()) {
                 Log::info('TDS Target updated successfully', [
                     'new_value' => $tdsTarget,
-                    'updated_by' => 'web_dashboard'
+                    'updated_by' => 'web_dashboard',
+                    'response' => $response->body()
                 ]);
                 
                 return response()->json([
                     'success' => true,
                     'message' => 'TDS Target updated successfully',
-                    'new_value' => $tdsTarget
+                    'new_value' => $tdsTarget,
+                    'firebase_response' => $response->body()
                 ]);
             }
             
             Log::error('Failed to update TDS Target', [
                 'status' => $response->status(),
-                'response' => $response->body()
+                'response' => $response->body(),
+                'url' => $url
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update TDS Target in Firebase'
-            ], $response->status());
+                'message' => 'Failed to update TDS Target in Firebase: HTTP ' . $response->status(),
+                'firebase_error' => $response->body()
+            ], 500);
             
         } catch (\Exception $e) {
             Log::error('TDS Target update error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,
