@@ -575,6 +575,172 @@ class MonitoringController extends Controller
     }
 
     /**
+     * Get mingguKe value from Firebase
+     */
+    public function getMingguKe(): JsonResponse
+    {
+        try {
+            // Check if Firebase config exists
+            if (!$this->apiKey || !$this->databaseUrl) {
+                Log::error('Firebase configuration missing for mingguKe fetch');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Firebase configuration not found'
+                ], 500);
+            }
+            
+            $url = $this->databaseUrl . "/Config/mingguKe.json";
+            
+            $response = Http::timeout(10)->get($url);
+            
+            if ($response->successful()) {
+                $mingguKe = $response->json();
+                return response()->json([
+                    'success' => true,
+                    'minggu_ke' => $mingguKe ?: 1 // Default to week 1 if null
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch mingguKe from Firebase',
+                'minggu_ke' => 1 // Default value
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('mingguKe fetch error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal server error: ' . $e->getMessage(),
+                'minggu_ke' => 1 // Default value
+            ], 500);
+        }
+    }
+
+    /**
+     * Update mingguKe value in Firebase and automatically update TDS Target
+     */
+    public function updateMingguKe(Request $request): JsonResponse
+    {
+        $request->validate([
+            'minggu_ke' => 'required|integer|min:1|max:20'
+        ]);
+
+        try {
+            $mingguKe = (int) $request->input('minggu_ke');
+            
+            // Check if Firebase config exists
+            if (!$this->apiKey || !$this->databaseUrl) {
+                Log::error('Firebase configuration missing');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Firebase configuration not found'
+                ], 500);
+            }
+            
+            // Update mingguKe in Firebase
+            $mingguKeUrl = $this->databaseUrl . "/Config/mingguKe.json";
+            
+            Log::info('Updating mingguKe', [
+                'url' => $mingguKeUrl,
+                'new_value' => $mingguKe
+            ]);
+            
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Content-Type' => 'application/json'
+                ])
+                ->withBody(json_encode($mingguKe), 'application/json')
+                ->put($mingguKeUrl);
+            
+            if ($response->successful()) {
+                // Calculate new TDS Target based on mingguKe
+                $newTdsTarget = $this->calculateTdsTarget($mingguKe);
+                
+                // Update TDS Target in Firebase
+                $tdsUrl = $this->databaseUrl . "/Sensor/TDS_Target.json";
+                $tdsResponse = Http::timeout(30)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json'
+                    ])
+                    ->withBody(json_encode($newTdsTarget), 'application/json')
+                    ->put($tdsUrl);
+                
+                if ($tdsResponse->successful()) {
+                    Log::info('mingguKe and TDS Target updated successfully', [
+                        'minggu_ke' => $mingguKe,
+                        'new_tds_target' => $newTdsTarget
+                    ]);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'mingguKe updated successfully',
+                        'new_value' => $mingguKe,
+                        'new_tds_target' => $newTdsTarget
+                    ]);
+                } else {
+                    Log::warning('mingguKe updated but TDS Target update failed', [
+                        'minggu_ke' => $mingguKe,
+                        'tds_status' => $tdsResponse->status()
+                    ]);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'mingguKe updated but TDS Target update failed',
+                        'new_value' => $mingguKe,
+                        'warning' => 'TDS Target may not be updated automatically'
+                    ]);
+                }
+            }
+            
+            Log::error('Failed to update mingguKe', [
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update mingguKe in Firebase: HTTP ' . $response->status()
+            ], 500);
+            
+        } catch (\Exception $e) {
+            Log::error('mingguKe update error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal server error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Calculate TDS Target based on mingguKe (growth week)
+     */
+    private function calculateTdsTarget(int $mingguKe): int
+    {
+        // TDS target calculation based on plant growth stages
+        // Week 1-2: Seedling (400-600 ppm)
+        // Week 3-4: Early vegetative (600-800 ppm)
+        // Week 5-8: Vegetative growth (800-1200 ppm)
+        // Week 9-12: Pre-flowering (1000-1400 ppm)
+        // Week 13-16: Flowering (1200-1600 ppm)
+        // Week 17-20: Late flowering (1000-1200 ppm)
+        
+        if ($mingguKe <= 2) {
+            return 500; // Seedling stage
+        } elseif ($mingguKe <= 4) {
+            return 700; // Early vegetative
+        } elseif ($mingguKe <= 8) {
+            return 1000; // Vegetative growth
+        } elseif ($mingguKe <= 12) {
+            return 1200; // Pre-flowering
+        } elseif ($mingguKe <= 16) {
+            return 1400; // Flowering
+        } else {
+            return 1100; // Late flowering
+        }
+    }
+
+    /**
      * Get aggregated statistics
      */
     public function getStatistics(): JsonResponse

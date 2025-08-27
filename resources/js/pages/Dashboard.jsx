@@ -8,7 +8,8 @@ import {
     ChartBarIcon,
     ClockIcon,
     Cog6ToothIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
@@ -26,6 +27,12 @@ const Dashboard = () => {
     const [tdsTargetEdit, setTdsTargetEdit] = useState(false);
     const [newTdsTarget, setNewTdsTarget] = useState('');
     const [updating, setUpdating] = useState(false);
+    
+    // mingguKe state variables
+    const [mingguKe, setMingguKe] = useState(0);
+    const [mingguKeEdit, setMingguKeEdit] = useState(false);
+    const [newMingguKe, setNewMingguKe] = useState('');
+    const [updatingMingguKe, setUpdatingMingguKe] = useState(false);
 
     useEffect(() => {
         fetchRealtimeData();
@@ -111,6 +118,19 @@ const Dashboard = () => {
         };
     };
 
+    const fetchMingguKe = async () => {
+        try {
+            const response = await axios.get('/api/minggu-ke');
+            if (response.data.success) {
+                setMingguKe(response.data.minggu_ke || 1);
+                console.log('mingguKe fetched:', response.data.minggu_ke);
+            }
+        } catch (err) {
+            console.error('Error fetching mingguKe:', err);
+            setMingguKe(1); // Default to week 1
+        }
+    };
+
     const fetchRealtimeData = async () => {
         try {
             // Only fetch real data for the default device (device-1 with isReal=true)
@@ -123,6 +143,9 @@ const Dashboard = () => {
                     setRealtimeData(response.data.data);
                     setLastUpdate(new Date());
                     setError(null);
+                    
+                    // Fetch mingguKe value for real devices
+                    fetchMingguKe();
                 } else {
                     const errorMsg = response.data.message || 'Unknown error occurred';
                     const debugInfo = response.data.debug ? ` (Debug: ${response.data.debug})` : '';
@@ -135,6 +158,8 @@ const Dashboard = () => {
                 setRealtimeData(dummyData);
                 setLastUpdate(new Date());
                 setError(null);
+                // Set dummy mingguKe for non-real devices
+                setMingguKe(Math.floor(Math.random() * 8) + 1); // Random week 1-8
                 console.log(`Using dummy data for ${activeDevice?.name || 'Unknown Device'}:`, dummyData);
             }
         } catch (err) {
@@ -321,6 +346,67 @@ const Dashboard = () => {
     const cancelTdsTargetEdit = () => {
         setTdsTargetEdit(false);
         setNewTdsTarget('');
+    };
+
+    // mingguKe functions
+    const updateMingguKe = async () => {
+        // Only allow mingguKe update for real devices
+        if (!activeDevice?.isReal) {
+            alert('mingguKe can only be updated for real devices (device-1).\n\nThis is a dummy device for demonstration purposes only.');
+            return;
+        }
+
+        if (!newMingguKe || newMingguKe < 1 || newMingguKe > 20) {
+            alert('Please enter a valid mingguKe value between 1 and 20');
+            return;
+        }
+
+        try {
+            setUpdatingMingguKe(true);
+            console.log('Updating mingguKe to:', newMingguKe);
+            
+            const response = await axios.post('/api/update-minggu-ke', {
+                minggu_ke: parseInt(newMingguKe)
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            console.log('Update mingguKe response:', response.data);
+
+            if (response.data.success) {
+                console.log('mingguKe update success, new value:', response.data.new_value);
+                setMingguKe(parseInt(newMingguKe));
+                alert(`mingguKe updated successfully to week ${newMingguKe}.\n\nThe Arduino device will automatically adjust TDS Target based on the new week setting.`);
+                setMingguKeEdit(false);
+                setNewMingguKe('');
+                // Immediately refresh data to show updated target
+                fetchRealtimeData();
+            } else {
+                alert(`Failed to update mingguKe: ${response.data.message}`);
+            }
+        } catch (err) {
+            console.error('Error updating mingguKe:', err);
+            alert(`Error updating mingguKe: ${err.response?.data?.message || err.message}`);
+        } finally {
+            setUpdatingMingguKe(false);
+        }
+    };
+
+    const handleMingguKeEdit = () => {
+        if (!activeDevice?.isReal) {
+            alert('mingguKe can only be edited for real devices (device-1).\n\nThis is a dummy device for demonstration purposes only.');
+            return;
+        }
+        setNewMingguKe(mingguKe || 1);
+        setMingguKeEdit(true);
+    };
+
+    const cancelMingguKeEdit = () => {
+        setMingguKeEdit(false);
+        setNewMingguKe('');
     };
 
     const getPumpStatus = (pumpValue) => {
@@ -521,36 +607,51 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* TDS Target Card */}
-                        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
-                            <div className="flex items-center justify-between">
+                        {/* TDS Target Card with mingguKe control - Spans 2 columns */}
+                        <div className="col-span-1 sm:col-span-2 lg:col-span-2 bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* TDS Target Section (Read Only) */}
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                        <ChartBarIcon className="h-6 w-6 text-orange-600 " />
-                                        <p className="text-sm font-medium text-gray-600 ">TDS Target</p>
+                                        <ChartBarIcon className="h-6 w-6 text-orange-600" />
+                                        <p className="text-sm font-medium text-gray-600">TDS Target</p>
+                                        <LockClosedIcon className="h-4 w-4 text-gray-400" title="Read-only - controlled by mingguKe" />
                                     </div>
-                                    {tdsTargetEdit ? (
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-2xl lg:text-3xl font-bold text-gray-900">{realtimeData.TDS_Target || 1000}</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">ppm (Auto-controlled by growth week)</p>
+                                </div>
+                                
+                                {/* mingguKe Section */}
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <ClockIcon className="h-4 w-4 text-blue-600" />
+                                        <p className="text-sm font-medium text-gray-600">Growth Week (mingguKe)</p>
+                                    </div>
+                                    {mingguKeEdit ? (
                                         <div className="mt-2">
                                             <div className="flex items-center space-x-2">
                                                 <input
                                                     type="number"
-                                                    value={newTdsTarget}
-                                                    onChange={(e) => setNewTdsTarget(e.target.value)}
-                                                    min="100"
-                                                    max="3000"
-                                                    className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-gray-900 w-20"
-                                                    disabled={updating}
+                                                    value={newMingguKe}
+                                                    onChange={(e) => setNewMingguKe(e.target.value)}
+                                                    min="1"
+                                                    max="20"
+                                                    className="px-2 py-1 border border-gray-300 rounded text-xs bg-white text-gray-900 w-16"
+                                                    disabled={updatingMingguKe}
                                                 />
+                                                <span className="text-xs text-gray-500">week</span>
                                                 <button
-                                                    onClick={updateTdsTarget}
-                                                    disabled={updating}
+                                                    onClick={updateMingguKe}
+                                                    disabled={updatingMingguKe}
                                                     className="px-2 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded text-xs"
                                                 >
-                                                    {updating ? '...' : '✓'}
+                                                    {updatingMingguKe ? '...' : '✓'}
                                                 </button>
                                                 <button
-                                                    onClick={cancelTdsTargetEdit}
-                                                    disabled={updating}
+                                                    onClick={cancelMingguKeEdit}
+                                                    disabled={updatingMingguKe}
                                                     className="px-2 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded text-xs"
                                                 >
                                                     ✕
@@ -559,25 +660,27 @@ const Dashboard = () => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-between mt-2">
-                                            <p className="text-2xl lg:text-3xl font-bold text-gray-900 ">{realtimeData.TDS_Target || 1000}</p>
+                                            <div className="flex items-center space-x-2">
+                                                <p className="text-lg lg:text-2xl font-bold text-blue-700">Week {mingguKe || 1}</p>
+                                            </div>
                                             <button
-                                                onClick={handleTdsTargetEdit}
+                                                onClick={handleMingguKeEdit}
                                                 className={`${
                                                     activeDevice?.isReal 
-                                                        ? 'text-gray-400 hover:text-gray-600' 
+                                                        ? 'text-gray-400 hover:text-blue-600' 
                                                         : 'text-gray-300 cursor-not-allowed'
                                                 }`}
                                                 title={
                                                     activeDevice?.isReal 
-                                                        ? "Edit TDS Target" 
-                                                        : "TDS Target cannot be edited for dummy devices"
+                                                        ? "Edit Growth Week" 
+                                                        : "Growth week cannot be edited for dummy devices"
                                                 }
                                             >
                                                 <Cog6ToothIcon className="h-4 w-4" />
                                             </button>
                                         </div>
                                     )}
-                                    <p className="text-xs text-gray-500 mt-1">ppm (Setpoint)</p>
+                                    <p className="text-xs text-gray-400 mt-1">Controls TDS target automatically</p>
                                 </div>
                             </div>
                         </div>
