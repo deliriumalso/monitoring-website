@@ -725,18 +725,18 @@ class MonitoringController extends Controller
         // Week 13-16: Flowering (1200-1600 ppm)
         // Week 17-20: Late flowering (1000-1200 ppm)
         
-        if ($mingguKe <= 2) {
-            return 500; // Seedling stage
+        if ($mingguKe <= 0) {
+            return 0; // Seedling stage
+        } elseif ($mingguKe <= 1) {
+            return 600; // Early vegetative
+        } elseif ($mingguKe <= 2) {
+            return 750; // Vegetative growth
+        } elseif ($mingguKe <= 3) {
+            return 750; // Pre-flowering
         } elseif ($mingguKe <= 4) {
-            return 700; // Early vegetative
-        } elseif ($mingguKe <= 8) {
-            return 1000; // Vegetative growth
-        } elseif ($mingguKe <= 12) {
-            return 1200; // Pre-flowering
-        } elseif ($mingguKe <= 16) {
-            return 1400; // Flowering
+            return 900; // Flowering
         } else {
-            return 1100; // Late flowering
+            return 600; // Late flowering
         }
     }
 
