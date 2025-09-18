@@ -561,7 +561,7 @@ const History = () => {
                                     ]
                                 }}
                                 options={{
-                                    ...chartOptions('Current Consumption Over Time', 'Current (A)', 0, 5),
+                                    ...chartOptions('Current Consumption Over Time', 'Current (A)', 0, 0.5),
                                     plugins: {
                                         ...chartOptions().plugins,
                                         legend: {
@@ -569,6 +569,20 @@ const History = () => {
                                             position: 'top',
                                             labels: {
                                                 usePointStyle: true,
+                                                color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        ...chartOptions().scales,
+                                        y: {
+                                            ...chartOptions().scales.y,
+                                            min: 0,
+                                            max: 0.5,
+                                            grid: {
+                                                color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+                                            },
+                                            ticks: {
                                                 color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
                                             }
                                         }
