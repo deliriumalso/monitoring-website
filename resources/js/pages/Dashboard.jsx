@@ -26,6 +26,10 @@ const Dashboard = () => {
     const [tdsTargetEdit, setTdsTargetEdit] = useState(false);
     const [newTdsTarget, setNewTdsTarget] = useState('');
     const [updating, setUpdating] = useState(false);
+    const [isOnline, setIsOnline] = useState(true);
+    const [offlineReason, setOfflineReason] = useState('');
+    const [pHOutOfRangeStart, setPHOutOfRangeStart] = useState(null);
+    const [pHAlertActive, setPHAlertActive] = useState(false);
 
     useEffect(() => {
         fetchRealtimeData();
@@ -46,6 +50,58 @@ const Dashboard = () => {
             if (interval) clearInterval(interval);
         };
     }, [autoRefresh, refreshInterval, activeDevice]);
+
+    // Effect untuk memantau pH range dan memberikan alert
+    useEffect(() => {
+        let pHTimer;
+        
+        // Hanya monitor untuk real device yang memiliki data
+        if (realtimeData && activeDevice?.isReal) {
+            const currentPH = parseFloat(realtimeData.pH);
+            const isOutOfRange = currentPH < 5.5 || currentPH > 6.5;
+            
+            if (isOutOfRange) {
+                if (!pHOutOfRangeStart) {
+                    // Mulai timer ketika pH pertama kali keluar dari range
+                    setPHOutOfRangeStart(new Date());
+                    console.log(`pH out of range detected: ${currentPH}. Starting timer...`);
+                } else {
+                    // Cek apakah sudah lebih dari 5 menit
+                    const timeOutOfRange = new Date() - pHOutOfRangeStart;
+                    
+                    if (timeOutOfRange >= 300000 && !pHAlertActive) { // 5 menit = 300000ms
+                        setPHAlertActive(true);
+                        setIsOnline(false);
+                        setOfflineReason(`pH level out of range (${currentPH}) for more than 5 minutes. Optimal range: 5.5 - 6.5`);
+                        console.log(`pH Alert: System offline due to pH ${currentPH} out of range for ${Math.round(timeOutOfRange/1000)} seconds`);
+                    }
+                }
+            } else {
+                // pH kembali normal, reset semua status
+                if (pHOutOfRangeStart || pHAlertActive) {
+                    setPHOutOfRangeStart(null);
+                    setPHAlertActive(false);
+                    setIsOnline(true);
+                    setOfflineReason('');
+                    console.log(`pH back to normal range: ${currentPH}. System online.`);
+                }
+            }
+        }
+        
+        return () => {
+            if (pHTimer) clearTimeout(pHTimer);
+        };
+    }, [realtimeData, activeDevice, pHOutOfRangeStart, pHAlertActive]);
+
+    // Reset status ketika device berubah
+    useEffect(() => {
+        if (activeDevice?.id) {
+            setIsOnline(true);
+            setOfflineReason('');
+            setPHOutOfRangeStart(null);
+            setPHAlertActive(false);
+        }
+    }, [activeDevice?.id]);
 
     // Generate realistic dummy data for non-real devices
     const generateDummyData = (deviceId) => {
@@ -157,6 +213,11 @@ const Dashboard = () => {
                 }
                 
                 setError(errorMessage);
+                // Set offline hanya jika tidak ada pH alert yang sedang aktif
+                if (!pHAlertActive) {
+                    setIsOnline(false);
+                    setOfflineReason(errorMessage);
+                }
                 console.error('Error fetching realtime data:', err);
             } else {
                 // For dummy devices, always use dummy data - no errors shown
@@ -453,7 +514,9 @@ const Dashboard = () => {
                                         <p className="text-sm font-medium text-gray-600 ">pH Level</p>
                                     </div>
                                     <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2">{realtimeData.pH || 0}</p>
-                                    <p className="text-xs text-gray-500 mt-1">Acidity Level</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Acidity Level (Range: 5.5 - 6.5)
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -590,8 +653,24 @@ const Dashboard = () => {
                                         <Cog6ToothIcon className="h-6 w-6 text-indigo-600 " />
                                         <p className="text-sm font-medium text-gray-600 ">System Status</p>
                                     </div>
-                                    <p className="text-2xl lg:text-3xl font-bold text-green-600 mt-2">Online</p>
-                                    <p className="text-xs text-gray-500 mt-1">All Systems Active</p>
+                                    {activeDevice?.isReal ? (
+                                        isOnline ? (
+                                            <>
+                                                <p className="text-2xl lg:text-3xl font-bold text-green-600 mt-2">Online</p>
+                                                <p className="text-xs text-gray-500 mt-1">All Systems Active</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-2xl lg:text-3xl font-bold text-red-600 mt-2">Offline</p>
+                                                <p className="text-xs text-red-500 mt-1 break-words max-w-full">{offlineReason}</p>
+                                            </>
+                                        )
+                                    ) : (
+                                        <>
+                                            <p className="text-2xl lg:text-3xl font-bold text-green-600 mt-2">Online</p>
+                                            <p className="text-xs text-gray-500 mt-1">Demo Mode Active</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
